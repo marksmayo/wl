@@ -12,6 +12,7 @@ import {
 import { ThreeBackground } from "@/components/ThreeBackground";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { CountUp } from "@/components/CountUp";
+import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 
 const DATE_FMT: Intl.DateTimeFormatOptions = {
   month: "long",
@@ -26,6 +27,8 @@ export default async function Home() {
   ]);
 
   const status = competitionStatus();
+  const fallbackDays =
+    status === "upcoming" ? daysUntilStart() : status === "active" ? daysRemaining() : 0;
 
   return (
     <main className="relative flex flex-1 flex-col overflow-hidden">
@@ -34,9 +37,7 @@ export default async function Home() {
       <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-28 text-center">
         <AnimatedIn>
           <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-4 py-1.5 text-xs uppercase tracking-widest text-muted">
-            {status === "upcoming" && `Starts in ${daysUntilStart()} days`}
-            {status === "active" && `${daysRemaining()} days remaining`}
-            {status === "ended" && "Competition ended"}
+            <LiveCompetitionStatus fallbackStatus={status} fallbackDays={fallbackDays} variant="badge" />
           </span>
         </AnimatedIn>
 

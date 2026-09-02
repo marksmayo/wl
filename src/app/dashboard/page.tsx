@@ -16,6 +16,7 @@ import { WeighInForm } from "@/components/WeighInForm";
 import { WeightChart } from "@/components/WeightChart";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { CountUp } from "@/components/CountUp";
+import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
   const myEntry = entries.find((e) => e.userId === user.id);
   const colorMap = buildColorMap(participants.map((p) => p.id));
   const status = competitionStatus();
+  const fallbackDays = status === "active" ? daysRemaining() : 0;
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
@@ -57,11 +59,11 @@ export default async function DashboardPage() {
               Hey {user.fullName.split(" ")[0]} 👋
             </h1>
             <p className="mt-1 text-sm text-muted">
-              {status === "active"
-                ? `${daysRemaining()} days left in the competition.`
-                : status === "upcoming"
-                ? "The competition hasn't started yet — log a baseline once it opens."
-                : "The competition has ended. Great work!"}
+              <LiveCompetitionStatus
+                fallbackStatus={status}
+                fallbackDays={fallbackDays}
+                variant="dashboard"
+              />
             </p>
           </div>
           <Link
