@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { decryptSession } from "@/lib/session";
 
-const PROTECTED_ROUTES = ["/dashboard", "/leaderboard"];
+const PROTECTED_ROUTES = ["/dashboard", "/leaderboard", "/settings"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 export async function proxy(request: NextRequest) {

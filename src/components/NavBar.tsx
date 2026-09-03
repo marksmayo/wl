@@ -27,6 +27,12 @@ export async function NavBar() {
             >
               Leaderboard
             </Link>
+            <Link
+              href="/settings"
+              className="text-sm text-muted transition-colors hover:text-foreground"
+            >
+              Settings
+            </Link>
             <span className="hidden text-sm text-muted sm:inline">{session.fullName}</span>
             <LogoutButton />
           </nav>
