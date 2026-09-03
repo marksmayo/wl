@@ -1,6 +1,6 @@
 // Fixed competition window. Dates are treated as UTC calendar days.
 export const COMPETITION_START = "2026-09-04";
-export const COMPETITION_END = "2026-12-15";
+export const COMPETITION_END = "2026-12-12";
 
 export const COMPETITION_START_DATE = new Date(`${COMPETITION_START}T00:00:00.000Z`);
 export const COMPETITION_END_DATE = new Date(`${COMPETITION_END}T00:00:00.000Z`);

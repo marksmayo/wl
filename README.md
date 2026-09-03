@@ -7,7 +7,7 @@ A small Next.js app for running a group weight-loss competition:
 - See everyone's progress as a % change line chart, plus ranked standings
 
 The competition window is fixed in code (`src/lib/competition.ts`):
-**September 4 – December 15**. Rankings are based on each person's % change
+**September 4 – December 12**. Rankings are based on each person's % change
 from their own first logged weigh-in, so the start date doesn't have to be
 exact for everyone.
 

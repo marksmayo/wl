@@ -37,7 +37,7 @@ export async function logWeighInAction(
   const { date, weight } = parsed.data;
 
   if (!clampToCompetitionWindow(date)) {
-    return { error: "That date is outside the competition window (Sep 4 – Dec 15)." };
+    return { error: "That date is outside the competition window (Sep 4 – Dec 12)." };
   }
 
   await prisma.weighIn.upsert({

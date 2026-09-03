@@ -9,7 +9,7 @@ export default function RegisterPage() {
         <div className="glass rounded-3xl p-8 shadow-2xl shadow-black/40">
           <h1 className="text-2xl font-semibold tracking-tight">Join the competition</h1>
           <p className="mt-1 text-sm text-muted">
-            Sep 4 – Dec 15. Log your weight daily and climb the board.
+            Sep 4 – Dec 12. Log your weight daily and climb the board.
           </p>
           <div className="mt-8">
             <RegisterForm />

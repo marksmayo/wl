@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "DropIt — Weight Loss Competition",
-  description: "Track your progress and compete Sep 4 – Dec 15.",
+  description: "Track your progress and compete Sep 4 – Dec 12.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
