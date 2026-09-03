@@ -1,6 +1,12 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import { COMPETITION_START, COMPETITION_END } from "@/lib/competition";
+import {
+  COMPETITION_START,
+  COMPETITION_END,
+  COMPETITION_END_DATE,
+  competitionStatus,
+  todayDateKey,
+} from "@/lib/competition";
 
 export type UserSeriesPoint = {
   dateKey: string;
@@ -12,9 +18,11 @@ export type LeaderboardEntry = {
   userId: string;
   fullName: string;
   unit: string;
+  hideWeight: boolean;
   startWeight: number | null;
   currentWeight: number | null;
   percentChange: number | null;
+  predictedFinalPercent: number | null;
   entryCount: number;
   rank: number | null;
 };
@@ -41,6 +49,7 @@ export async function getLeaderboardData() {
       id: true,
       fullName: true,
       unit: true,
+      hideWeight: true,
       weighIns: {
         where: {
           date: {
@@ -104,14 +113,33 @@ export async function getLeaderboardData() {
 
   const entries: LeaderboardEntry[] = users.map((user) => {
     const series = seriesByUser.get(user.id);
+    const first = series?.[0];
     const last = series?.[series.length - 1];
+
+    // Extrapolate each person's own daily rate of change (first entry to
+    // latest) across the full span to competition end — a rough "if this
+    // pace holds" projection, not a re-ranking signal.
+    let predictedFinalPercent: number | null = null;
+    if (first && last && series && series.length >= 2) {
+      const firstMs = new Date(`${first.dateKey}T00:00:00.000Z`).getTime();
+      const lastMs = new Date(`${last.dateKey}T00:00:00.000Z`).getTime();
+      const daysElapsed = (lastMs - firstMs) / 86_400_000;
+      if (daysElapsed > 0) {
+        const dailyRate = last.percentChange / daysElapsed;
+        const daysFirstToEnd = (COMPETITION_END_DATE.getTime() - firstMs) / 86_400_000;
+        predictedFinalPercent = dailyRate * daysFirstToEnd;
+      }
+    }
+
     return {
       userId: user.id,
       fullName: user.fullName,
       unit: user.unit,
-      startWeight: series?.[0]?.weight ?? null,
+      hideWeight: user.hideWeight,
+      startWeight: first?.weight ?? null,
       currentWeight: last?.weight ?? null,
       percentChange: last?.percentChange ?? null,
+      predictedFinalPercent,
       entryCount: series?.length ?? 0,
       rank: null,
     };
@@ -127,9 +155,21 @@ export async function getLeaderboardData() {
 
   const unranked = entries.filter((e) => e.percentChange === null);
 
+  // Only meaningful during the active window — before it starts nobody is
+  // expected to have logged anything yet, and after it ends there's no
+  // "today" to chase.
+  const todayKey = todayDateKey();
+  const missingToday =
+    competitionStatus() === "active"
+      ? users
+          .filter((user) => !user.weighIns.some((w) => dateToKey(w.date) === todayKey))
+          .map((user) => ({ id: user.id, fullName: user.fullName }))
+      : [];
+
   return {
     chartData,
     entries: [...ranked, ...unranked],
     participants: users.map((u) => ({ id: u.id, fullName: u.fullName })),
+    missingToday,
   };
 }

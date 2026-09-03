@@ -22,7 +22,7 @@ export function RankingsTable({
 
   return (
     <div className="overflow-x-auto scrollbar-thin">
-      <table className="w-full min-w-[560px] border-separate border-spacing-y-2 text-sm">
+      <table className="w-full min-w-[680px] border-separate border-spacing-y-2 text-sm">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wider text-muted">
             <th className="px-4 pb-1 font-medium">Rank</th>
@@ -30,11 +30,18 @@ export function RankingsTable({
             <th className="px-4 pb-1 font-medium">Start</th>
             <th className="px-4 pb-1 font-medium">Current</th>
             <th className="px-4 pb-1 text-right font-medium">Change</th>
+            <th
+              className="px-4 pb-1 text-right font-medium"
+              title="Extrapolated from each person's own daily pace to the end of the competition"
+            >
+              Projected
+            </th>
           </tr>
         </thead>
         <tbody>
           {entries.map((entry) => {
             const isSelf = entry.userId === currentUserId;
+            const masked = entry.hideWeight && !isSelf;
             const change = entry.percentChange;
             const changeColor =
               change === null
@@ -74,13 +81,16 @@ export function RankingsTable({
                   </span>
                 </td>
                 <td className="px-4 py-3 text-muted">
-                  {formatWeight(entry.startWeight, entry.unit)}
+                  {masked ? "🔒 Hidden" : formatWeight(entry.startWeight, entry.unit)}
                 </td>
                 <td className="px-4 py-3 text-muted">
-                  {formatWeight(entry.currentWeight, entry.unit)}
+                  {masked ? "🔒 Hidden" : formatWeight(entry.currentWeight, entry.unit)}
                 </td>
-                <td className={`rounded-r-xl px-4 py-3 text-right font-mono font-medium ${changeColor}`}>
+                <td className={`px-4 py-3 text-right font-mono font-medium ${changeColor}`}>
                   {formatPercent(change)}
+                </td>
+                <td className="rounded-r-xl px-4 py-3 text-right font-mono text-muted italic">
+                  {formatPercent(entry.predictedFinalPercent)}
                 </td>
               </tr>
             );

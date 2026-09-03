@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/dal";
 import { EditNameForm } from "@/components/EditNameForm";
 import { EditUnitForm } from "@/components/EditUnitForm";
+import { EditPrivacyForm } from "@/components/EditPrivacyForm";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 
 export default async function SettingsPage() {
@@ -25,6 +26,13 @@ export default async function SettingsPage() {
           <h2 className="text-lg font-semibold">Preferred unit</h2>
           <div className="mt-4">
             <EditUnitForm currentUnit={user.unit} />
+          </div>
+        </div>
+
+        <div className="settings-card glass rounded-2xl p-6">
+          <h2 className="text-lg font-semibold">Privacy</h2>
+          <div className="mt-4">
+            <EditPrivacyForm hideWeight={user.hideWeight} />
           </div>
         </div>
       </AnimatedStagger>

@@ -77,6 +77,20 @@ export function RegisterForm() {
         </div>
       </fieldset>
 
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm transition-colors has-[:checked]:border-accent has-[:checked]:bg-accent/10">
+        <input
+          type="checkbox"
+          name="hideWeight"
+          className="mt-0.5 accent-[var(--accent)]"
+        />
+        <span>
+          Hide my weight from others
+          <span className="block text-xs text-muted">
+            Only your % change shows on the leaderboard — your actual weight stays private.
+          </span>
+        </span>
+      </label>
+
       {state?.error && (
         <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {state.error}

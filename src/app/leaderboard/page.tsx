@@ -4,12 +4,13 @@ import { buildColorMap } from "@/lib/chartColors";
 import { competitionStatus, daysRemaining, daysUntilStart } from "@/lib/competition";
 import { WeightChart } from "@/components/WeightChart";
 import { RankingsTable } from "@/components/RankingsTable";
+import { MissingToday } from "@/components/MissingToday";
 import { AnimatedIn } from "@/components/AnimatedIn";
 import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 
 export default async function LeaderboardPage() {
   const session = await verifySession();
-  const { chartData, entries, participants } = await getLeaderboardData();
+  const { chartData, entries, participants, missingToday } = await getLeaderboardData();
   const colorMap = buildColorMap(participants.map((p) => p.id));
   const status = competitionStatus();
   const fallbackDays =
@@ -40,7 +41,13 @@ export default async function LeaderboardPage() {
         </div>
       </AnimatedIn>
 
-      <AnimatedIn delay={0.2} className="mt-6">
+      {missingToday.length > 0 && (
+        <AnimatedIn delay={0.2} className="mt-6">
+          <MissingToday people={missingToday} />
+        </AnimatedIn>
+      )}
+
+      <AnimatedIn delay={0.25} className="mt-6">
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Standings</h2>
           <div className="mt-4">

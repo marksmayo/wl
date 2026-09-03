@@ -12,6 +12,7 @@ model User {
   fullName     String    @unique
   passwordHash String
   unit         String    @default("kg")
+  hideWeight   Boolean   @default(false)
   createdAt    DateTime  @default(now())
   weighIns     WeighIn[]
 }

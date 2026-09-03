@@ -93,3 +93,24 @@ export async function updateUnitAction(
 
   return { success: true };
 }
+
+export type UpdatePrivacyFormState = {
+  success?: boolean;
+} | undefined;
+
+export async function updatePrivacyAction(
+  _prevState: UpdatePrivacyFormState,
+  formData: FormData
+): Promise<UpdatePrivacyFormState> {
+  const session = await verifySession();
+  const hideWeight = formData.get("hideWeight") === "on";
+
+  await prisma.user.update({
+    where: { id: session.userId },
+    data: { hideWeight },
+  });
+
+  revalidatePath("/leaderboard");
+
+  return { success: true };
+}

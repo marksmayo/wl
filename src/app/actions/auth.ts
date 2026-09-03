@@ -38,6 +38,7 @@ export async function registerAction(
   }
 
   const { fullName, password, unit } = parsed.data;
+  const hideWeight = formData.get("hideWeight") === "on";
 
   const existing = await prisma.user.findUnique({ where: { fullName } });
   if (existing) {
@@ -47,7 +48,7 @@ export async function registerAction(
   const passwordHash = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.create({
-    data: { fullName, passwordHash, unit },
+    data: { fullName, passwordHash, unit, hideWeight },
   });
 
   await createSession({ userId: user.id, fullName: user.fullName });
