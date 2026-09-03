@@ -68,7 +68,7 @@ export function RegisterForm() {
                 type="radio"
                 name="unit"
                 value={u}
-                defaultChecked={u === "lbs"}
+                defaultChecked={u === "kg"}
                 className="accent-[var(--accent)]"
               />
               {u}

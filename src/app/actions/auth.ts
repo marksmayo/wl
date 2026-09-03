@@ -30,7 +30,7 @@ export async function registerAction(
     fullName: formData.get("fullName"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
-    unit: formData.get("unit") || "lbs",
+    unit: formData.get("unit") || "kg",
   });
 
   if (!parsed.success) {
