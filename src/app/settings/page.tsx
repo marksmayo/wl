@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/dal";
 import { EditNameForm } from "@/components/EditNameForm";
-import { AnimatedIn } from "@/components/AnimatedIn";
+import { EditUnitForm } from "@/components/EditUnitForm";
+import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
@@ -10,14 +11,23 @@ export default async function SettingsPage() {
       <AnimatedIn>
         <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-1 text-sm text-muted">Update how you appear on the leaderboard.</p>
+      </AnimatedIn>
 
-        <div className="glass mt-8 rounded-2xl p-6">
+      <AnimatedStagger className="mt-8 flex flex-col gap-6" itemSelector=".settings-card">
+        <div className="settings-card glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Your name</h2>
           <div className="mt-4">
             <EditNameForm currentName={user.fullName} />
           </div>
         </div>
-      </AnimatedIn>
+
+        <div className="settings-card glass rounded-2xl p-6">
+          <h2 className="text-lg font-semibold">Preferred unit</h2>
+          <div className="mt-4">
+            <EditUnitForm currentUnit={user.unit} />
+          </div>
+        </div>
+      </AnimatedStagger>
     </main>
   );
 }
