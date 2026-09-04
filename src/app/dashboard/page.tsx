@@ -113,6 +113,10 @@ export default async function DashboardPage() {
             unit={user.unit}
             defaultDate={defaultDate}
             defaultWeight={todaysEntry?.weight}
+            weighIns={myWeighIns.map((w) => ({
+              date: w.date.toISOString().slice(0, 10),
+              weight: w.weight,
+            }))}
           />
         </AnimatedIn>
 

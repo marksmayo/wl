@@ -3,22 +3,31 @@
 import { useActionState, useRef, useEffect } from "react";
 import { gsap } from "gsap";
 import { logWeighInAction, type WeighInFormState } from "@/app/actions/weighins";
-import { COMPETITION_START, COMPETITION_END } from "@/lib/competition";
+import {
+  COMPETITION_START,
+  COMPETITION_END,
+  clampToCompetitionWindow,
+  localDateKey,
+} from "@/lib/competition";
 
 export function WeighInForm({
   unit,
   defaultDate,
   defaultWeight,
+  weighIns = [],
 }: {
   unit: string;
   defaultDate: string;
   defaultWeight?: number;
+  weighIns?: { date: string; weight: number }[];
 }) {
   const [state, action, pending] = useActionState<WeighInFormState, FormData>(
     logWeighInAction,
     undefined
   );
   const cardRef = useRef<HTMLDivElement>(null);
+  const dateRef = useRef<HTMLInputElement>(null);
+  const weightRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state?.success && cardRef.current) {
@@ -36,6 +45,30 @@ export function WeighInForm({
     }
   }, [state?.success]);
 
+  useEffect(() => {
+    // The server resolves "today" in UTC, which lags AU/NZ visitors by
+    // hours and can default this form to yesterday. Correct it to the
+    // visitor's real local date once we know it — only if they haven't
+    // already touched the field.
+    const dateInput = dateRef.current;
+    if (!dateInput || dateInput.value !== defaultDate) return;
+
+    const localToday = localDateKey(new Date());
+    const correctedDate = clampToCompetitionWindow(localToday)
+      ? localToday
+      : localToday < COMPETITION_START
+      ? COMPETITION_START
+      : COMPETITION_END;
+
+    if (correctedDate === defaultDate) return;
+
+    dateInput.value = correctedDate;
+    const match = weighIns.find((w) => w.date === correctedDate);
+    if (weightRef.current) {
+      weightRef.current.value = match ? String(match.weight) : "";
+    }
+  }, [defaultDate, weighIns]);
+
   return (
     <div ref={cardRef} className="glass rounded-2xl p-6">
       <h2 className="text-lg font-semibold">Log today&apos;s weight</h2>
@@ -50,6 +83,7 @@ export function WeighInForm({
               Date
             </label>
             <input
+              ref={dateRef}
               id="date"
               name="date"
               type="date"
@@ -65,6 +99,7 @@ export function WeighInForm({
               Weight ({unit})
             </label>
             <input
+              ref={weightRef}
               id="weight"
               name="weight"
               type="number"
