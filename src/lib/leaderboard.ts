@@ -157,7 +157,9 @@ export async function getLeaderboardData() {
 
   // Only meaningful during the active window — before it starts nobody is
   // expected to have logged anything yet, and after it ends there's no
-  // "today" to chase.
+  // "today" to chase. This UTC-based version is only the SSR/no-JS
+  // fallback — the client corrects it to the visitor's real local date
+  // (see LiveMissingToday), since AU/NZ run 10-13 hours ahead of UTC.
   const todayKey = todayDateKey();
   const missingToday =
     competitionStatus() === "active"
@@ -166,10 +168,19 @@ export async function getLeaderboardData() {
           .map((user) => ({ id: user.id, fullName: user.fullName }))
       : [];
 
+  // Every user's logged date-keys, so the client can redo the "who's
+  // missing today" check against the visitor's own local date.
+  const roster = users.map((user) => ({
+    id: user.id,
+    fullName: user.fullName,
+    loggedDates: user.weighIns.map((w) => dateToKey(w.date)),
+  }));
+
   return {
     chartData,
     entries: [...ranked, ...unranked],
     participants: users.map((u) => ({ id: u.id, fullName: u.fullName })),
     missingToday,
+    roster,
   };
 }

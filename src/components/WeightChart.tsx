@@ -62,10 +62,12 @@ export function WeightChart({
   data,
   participants,
   colorMap,
+  animate = false,
 }: {
   data: ChartRow[];
   participants: Participant[];
   colorMap: Record<string, string>;
+  animate?: boolean;
 }) {
   if (data.length === 0) {
     return (
@@ -110,7 +112,7 @@ export function WeightChart({
               iconSize={8}
             />
           )}
-          {participants.map((p) => (
+          {participants.map((p, i) => (
             <Line
               key={p.id}
               type="monotone"
@@ -121,7 +123,10 @@ export function WeightChart({
               dot={false}
               activeDot={{ r: 4 }}
               connectNulls={false}
-              isAnimationActive={false}
+              isAnimationActive={animate}
+              animationDuration={1400}
+              animationEasing="ease-in-out"
+              animationBegin={animate ? i * 80 : 0}
             />
           ))}
         </LineChart>
