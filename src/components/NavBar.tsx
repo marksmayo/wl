@@ -11,7 +11,7 @@ export async function NavBar() {
       <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold tracking-tight">
           <span className="inline-block h-2 w-2 rounded-full bg-accent shadow-[0_0_12px_2px_var(--accent)]" />
-          DropIt
+          The Hungry Games
         </Link>
 
         {session ? (

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DropIt — Weight Loss Competition",
+  title: "The Hungry Games — Weight Loss Competition",
   description: "Track your progress and compete Sep 4 – Dec 12.",
 };
 

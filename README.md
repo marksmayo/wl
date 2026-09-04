@@ -1,4 +1,4 @@
-# DropIt — Weight Loss Competition
+# The Hungry Games — Weight Loss Competition
 
 A small Next.js app for running a group weight-loss competition:
 
