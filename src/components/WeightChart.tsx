@@ -98,7 +98,12 @@ export function WeightChart({
           />
           <ReferenceLine y={0} stroke="rgba(255,255,255,0.18)" />
           <Tooltip content={<CustomTooltip />} />
-          {participants.length > 1 && (
+          {/* Recharts' legend can overflow its own container once it needs to
+              wrap onto many lines (a large competition easily has 15+ people),
+              so beyond a handful of names we drop it — the Standings table
+              below already pairs every name with its matching color, and the
+              hover tooltip covers point-in-time identification. */}
+          {participants.length > 1 && participants.length <= 8 && (
             <Legend
               wrapperStyle={{ fontSize: 12, color: "var(--muted)" }}
               iconType="circle"
