@@ -1,0 +1,31 @@
+# Deploys bbernhard/signal-cli-rest-api (https://github.com/bbernhard/signal-cli-rest-api)
+# as a small always-on Fly.io app. This is the piece that actually holds a
+# Signal identity and can send messages — the Next.js app just calls its
+# HTTP API. See ./README.md for the full one-time setup.
+
+app = "CHANGE-ME-weight-comp-signal-bridge" # must be globally unique on Fly
+primary_region = "syd"                     # Sydney — closest region to AU/NZ
+
+[build]
+  image = "bbernhard/signal-cli-rest-api:latest"
+
+[env]
+  # "normal" mode is the simplest — plain HTTP request/response, no
+  # websocket/daemon behavior needed for a send-only bot. See the project's
+  # README if you also want it to receive messages.
+  MODE = "normal"
+
+[[mounts]]
+  source = "signal_cli_data"
+  destination = "/home/.local/share/signal-cli"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

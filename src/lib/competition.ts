@@ -25,6 +25,19 @@ export function localDateKey(d: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+// For server-side jobs with no visitor to correct to (e.g. a daily cron) —
+// resolves "today" in a fixed IANA timezone instead of the server's UTC.
+export function todayDateKeyInTimeZone(timeZone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const lookup = Object.fromEntries(parts.map((p) => [p.type, p.value]));
+  return `${lookup.year}-${lookup.month}-${lookup.day}`;
+}
+
 export function dateKeyToLabel(dateKey: string): string {
   const d = new Date(`${dateKey}T00:00:00.000Z`);
   return d.toLocaleDateString("en-US", {
