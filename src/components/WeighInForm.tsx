@@ -103,11 +103,11 @@ export function WeighInForm({
               id="weight"
               name="weight"
               type="number"
-              step="0.1"
+              step="0.01"
               min="1"
               required
               defaultValue={defaultWeight}
-              placeholder={unit === "kg" ? "70.5" : "155.0"}
+              placeholder={unit === "kg" ? "70.50" : "155.00"}
               className="rounded-xl border border-border bg-surface-2 px-4 py-3 text-foreground outline-none transition-colors focus:border-accent"
             />
           </div>

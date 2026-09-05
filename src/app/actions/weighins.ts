@@ -34,7 +34,9 @@ export async function logWeighInAction(
     return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
 
-  const { date, weight } = parsed.data;
+  const { date } = parsed.data;
+  // Cap at 2 decimal places regardless of what the client actually sent.
+  const weight = Math.round(parsed.data.weight * 100) / 100;
 
   if (!clampToCompetitionWindow(date)) {
     return { error: "That date is outside the competition window (Sep 4 – Dec 12)." };

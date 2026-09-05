@@ -85,7 +85,7 @@ export async function updateUnitAction(
   const factor = nextUnit === "kg" ? 1 / LBS_PER_KG : LBS_PER_KG;
 
   await prisma.$transaction([
-    prisma.$executeRaw`UPDATE "WeighIn" SET weight = ROUND((weight * ${factor})::numeric, 1)::float8 WHERE "userId" = ${session.userId}`,
+    prisma.$executeRaw`UPDATE "WeighIn" SET weight = ROUND((weight * ${factor})::numeric, 2)::float8 WHERE "userId" = ${session.userId}`,
     prisma.user.update({ where: { id: session.userId }, data: { unit: nextUnit } }),
   ]);
 

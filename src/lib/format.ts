@@ -6,7 +6,7 @@ export function formatPercent(value: number | null, decimals = 1): string {
 
 export function formatWeight(value: number | null, unit: string): string {
   if (value === null || Number.isNaN(value)) return "—";
-  return `${value.toFixed(1)} ${unit}`;
+  return `${value.toFixed(2)} ${unit}`;
 }
 
 export function initials(fullName: string): string {

@@ -79,13 +79,13 @@ export default async function DashboardPage() {
         <div className="tile glass rounded-2xl p-5">
           <div className="text-xs uppercase tracking-wide text-muted">Starting weight</div>
           <div className="mt-2 text-2xl font-semibold">
-            {first ? <CountUp value={first.weight} decimals={1} suffix={` ${user.unit}`} /> : "—"}
+            {first ? <CountUp value={first.weight} decimals={2} suffix={` ${user.unit}`} /> : "—"}
           </div>
         </div>
         <div className="tile glass rounded-2xl p-5">
           <div className="text-xs uppercase tracking-wide text-muted">Current weight</div>
           <div className="mt-2 text-2xl font-semibold">
-            {latest ? <CountUp value={latest.weight} decimals={1} suffix={` ${user.unit}`} /> : "—"}
+            {latest ? <CountUp value={latest.weight} decimals={2} suffix={` ${user.unit}`} /> : "—"}
           </div>
         </div>
         <div className="tile glass rounded-2xl p-5">
