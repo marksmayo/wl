@@ -61,18 +61,6 @@ exact for everyone.
 That's it — no other setup needed. Share the URL with your group so everyone
 can register and start logging weigh-ins.
 
-## Signal nudge (optional)
-
-A daily Signal message listing who hasn't logged their weight yet, sent via
-a small self-hosted bridge (Signal has no official bot API). Entirely
-optional — the app works fine without it. Setup involves a separate Fly.io
-app and linking your own Signal account by scanning a QR code, so it's not
-something that can be pushed as code alone. See
-[`signal-bridge/README.md`](./signal-bridge/README.md) for the full
-walkthrough, and `.env.example` for the environment variables it needs
-(`SIGNAL_API_URL`, `SIGNAL_SENDER_NUMBER`, `SIGNAL_RECIPIENT`,
-`NUDGE_TIMEZONE`, `CRON_SECRET`).
-
 ## Notes
 
 - Full name doubles as the login identifier (no email/username system) —
