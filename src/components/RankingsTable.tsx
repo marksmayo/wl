@@ -89,8 +89,15 @@ export function RankingsTable({
                 <td className={`px-4 py-3 text-right font-mono font-medium ${changeColor}`}>
                   {formatPercent(change)}
                 </td>
-                <td className="rounded-r-xl px-4 py-3 text-right font-mono text-muted italic">
-                  {formatPercent(entry.predictedFinalPercent)}
+                <td className="rounded-r-xl px-4 py-3 text-right font-mono">
+                  <div className="text-muted italic">
+                    {formatPercent(entry.predictedFinalPercent)}
+                  </div>
+                  {!masked && (
+                    <div className="text-xs text-muted/70">
+                      {formatWeight(entry.predictedFinalWeight, entry.unit)}
+                    </div>
+                  )}
                 </td>
               </tr>
             );

@@ -23,6 +23,7 @@ export type LeaderboardEntry = {
   currentWeight: number | null;
   percentChange: number | null;
   predictedFinalPercent: number | null;
+  predictedFinalWeight: number | null;
   entryCount: number;
   rank: number | null;
 };
@@ -120,6 +121,7 @@ export async function getLeaderboardData() {
     // latest) across the full span to competition end — a rough "if this
     // pace holds" projection, not a re-ranking signal.
     let predictedFinalPercent: number | null = null;
+    let predictedFinalWeight: number | null = null;
     if (first && last && series && series.length >= 2) {
       const firstMs = new Date(`${first.dateKey}T00:00:00.000Z`).getTime();
       const lastMs = new Date(`${last.dateKey}T00:00:00.000Z`).getTime();
@@ -128,6 +130,9 @@ export async function getLeaderboardData() {
         const dailyRate = last.percentChange / daysElapsed;
         const daysFirstToEnd = (COMPETITION_END_DATE.getTime() - firstMs) / 86_400_000;
         predictedFinalPercent = dailyRate * daysFirstToEnd;
+        // Derived from the same % projection (not a separate calculation)
+        // so the two numbers always agree with each other.
+        predictedFinalWeight = first.weight * (1 + predictedFinalPercent / 100);
       }
     }
 
@@ -140,6 +145,7 @@ export async function getLeaderboardData() {
       currentWeight: last?.weight ?? null,
       percentChange: last?.percentChange ?? null,
       predictedFinalPercent,
+      predictedFinalWeight,
       entryCount: series?.length ?? 0,
       rank: null,
     };
