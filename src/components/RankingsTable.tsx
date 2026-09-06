@@ -104,7 +104,7 @@ export function RankingsTable({
                 </td>
                 <td className="rounded-r-xl px-4 py-3 text-right">
                   <Link
-                    href="/badges"
+                    href={isSelf ? "/badges" : `/badges/${entry.userId}`}
                     className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
                     title="View badges"
                   >
