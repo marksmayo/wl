@@ -7,17 +7,33 @@ import { RankingsTable } from "@/components/RankingsTable";
 import { LiveMissingToday } from "@/components/LiveMissingToday";
 import { AnimatedIn } from "@/components/AnimatedIn";
 import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
+import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
+import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { detectDevice } from "@/lib/badges/device";
 
 export default async function LeaderboardPage() {
   const session = await verifySession();
-  const { chartData, entries, participants, missingToday, roster } = await getLeaderboardData();
+  const [{ chartData, entries, participants, missingToday, roster }, device] = await Promise.all([
+    getLeaderboardData(),
+    detectDevice(),
+  ]);
   const colorMap = buildColorMap(participants.map((p) => p.id));
   const status = competitionStatus();
   const fallbackDays =
     status === "upcoming" ? daysUntilStart() : status === "active" ? daysRemaining() : 0;
 
+  const myRank = entries.find((e) => e.userId === session.userId)?.rank ?? null;
+  const newBadges = await evaluateAndAwardBadges({
+    userId: session.userId,
+    recordVisit: true,
+    device,
+    markViewedLeaderboard: true,
+    rank: myRank,
+  });
+
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+      <BadgeAnnouncer badgeIds={newBadges.map((b) => b.id)} />
       <AnimatedIn>
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Leaderboard</h1>

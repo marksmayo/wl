@@ -17,17 +17,21 @@ import { WeightChart } from "@/components/WeightChart";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { CountUp } from "@/components/CountUp";
 import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
+import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
+import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { detectDevice } from "@/lib/badges/device";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
-  const [myWeighIns, { chartData, entries, participants }] = await Promise.all([
+  const [myWeighIns, { chartData, entries, participants }, device] = await Promise.all([
     prisma.weighIn.findMany({
       where: { userId: user.id },
       orderBy: { date: "asc" },
       select: { date: true, weight: true },
     }),
     getLeaderboardData(),
+    detectDevice(),
   ]);
 
   const today = todayDateKey();
@@ -50,8 +54,16 @@ export default async function DashboardPage() {
   const status = competitionStatus();
   const fallbackDays = status === "active" ? daysRemaining() : 0;
 
+  const newBadges = await evaluateAndAwardBadges({
+    userId: user.id,
+    recordVisit: true,
+    device,
+    rank: myEntry?.rank ?? null,
+  });
+
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+      <BadgeAnnouncer badgeIds={newBadges.map((b) => b.id)} />
       <AnimatedIn>
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

@@ -8,13 +8,15 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(cuid())
-  fullName     String    @unique
+  id           String       @id @default(cuid())
+  fullName     String       @unique
   passwordHash String
-  unit         String    @default("kg")
-  hideWeight   Boolean   @default(false)
-  createdAt    DateTime  @default(now())
+  unit         String       @default("kg")
+  hideWeight   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
   weighIns     WeighIn[]
+  badges       UserBadge[]
+  dailyVisits  DailyVisit[]
 }
 
 model WeighIn {
@@ -25,6 +27,31 @@ model WeighIn {
   weight    Float
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+}
+
+// Earned achievements. badgeId matches a static definition in
+// src/lib/badges/definitions.ts — there's no Badge table since the set of
+// possible badges is fixed in code, not user-editable.
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId  String
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
+}
+
+// One row per user per calendar day they were active on any authenticated
+// page — powers the sign-in-streak badges, distinct from WeighIn dates
+// (which track when they actually logged a weight).
+model DailyVisit {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   DateTime @db.Date
 
   @@unique([userId, date])
 }

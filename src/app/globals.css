@@ -94,3 +94,16 @@ body {
     animation: none;
   }
 }
+
+@keyframes badge-in {
+  0% { transform: translateY(-12px) scale(0.96); opacity: 0; }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+.animate-badge-in {
+  animation: badge-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-badge-in {
+    animation: none;
+  }
+}

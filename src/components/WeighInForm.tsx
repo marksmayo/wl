@@ -9,6 +9,7 @@ import {
   clampToCompetitionWindow,
   localDateKey,
 } from "@/lib/competition";
+import { announceBadges } from "@/lib/badges/events";
 
 export function WeighInForm({
   unit,
@@ -44,6 +45,12 @@ export function WeighInForm({
       );
     }
   }, [state?.success]);
+
+  useEffect(() => {
+    if (state?.newBadges?.length) {
+      announceBadges(state.newBadges);
+    }
+  }, [state?.newBadges]);
 
   useEffect(() => {
     // The server resolves "today" in UTC, which lags AU/NZ visitors by
