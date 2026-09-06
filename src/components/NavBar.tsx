@@ -29,6 +29,12 @@ export async function NavBar() {
               Leaderboard
             </Link>
             <Link
+              href="/badges"
+              className="text-sm text-muted transition-colors hover:text-foreground"
+            >
+              Badges
+            </Link>
+            <Link
               href="/settings"
               className="text-sm text-muted transition-colors hover:text-foreground"
             >

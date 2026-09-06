@@ -1,10 +1,8 @@
 import { getCurrentUser } from "@/lib/dal";
-import { prisma } from "@/lib/prisma";
 import { EditNameForm } from "@/components/EditNameForm";
 import { EditUnitForm } from "@/components/EditUnitForm";
 import { EditPrivacyForm } from "@/components/EditPrivacyForm";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
-import { BadgeGallery } from "@/components/BadgeGallery";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
@@ -18,11 +16,6 @@ export default async function SettingsPage() {
     recordVisit: true,
     device,
     markViewedSettings: true,
-  });
-
-  const earnedBadges = await prisma.userBadge.findMany({
-    where: { userId: user.id },
-    select: { badgeId: true, earnedAt: true },
   });
 
   return (
@@ -52,13 +45,6 @@ export default async function SettingsPage() {
           <h2 className="text-lg font-semibold">Privacy</h2>
           <div className="mt-4">
             <EditPrivacyForm hideWeight={user.hideWeight} />
-          </div>
-        </div>
-
-        <div className="settings-card glass rounded-2xl p-6">
-          <h2 className="text-lg font-semibold">Badges</h2>
-          <div className="mt-4">
-            <BadgeGallery earned={earnedBadges} />
           </div>
         </div>
       </AnimatedStagger>
