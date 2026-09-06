@@ -33,6 +33,12 @@ export type EvaluateOptions = {
     latestWeight: number;
     /** Weight from the most recent entry strictly before the one just submitted. */
     previousWeight: number | null;
+    /**
+     * Set when checking a user's full history at once (backfill) rather
+     * than a single new submission — true if any entry anywhere in their
+     * history was a gain over the entry immediately before it.
+     */
+    everGained?: boolean;
   };
 };
 
@@ -84,7 +90,8 @@ export async function evaluateAndAwardBadges(
   if (opts.rank === 3) consider("rank-3", true);
 
   if (opts.afterWeighIn) {
-    const { weighInDates, firstWeight, latestWeight, previousWeight } = opts.afterWeighIn;
+    const { weighInDates, firstWeight, latestWeight, previousWeight, everGained } =
+      opts.afterWeighIn;
 
     consider("first-weigh-in", weighInDates.length >= 1);
 
@@ -104,9 +111,8 @@ export async function evaluateAndAwardBadges(
       }
     }
 
-    if (previousWeight !== null && latestWeight > previousWeight) {
-      consider("oopsie", true);
-    }
+    const gainedOnLastEntry = previousWeight !== null && latestWeight > previousWeight;
+    consider("oopsie", gainedOnLastEntry || Boolean(everGained));
   }
 
   if (toAward.size === 0) return [];
