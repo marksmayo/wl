@@ -1,8 +1,8 @@
-// A small set of reusable line-icon shapes, tinted per-badge via `color`
-// (defaults to currentColor). Escalating tiers (streaks, % milestones)
-// reuse the same shape and step through TIER_COLORS instead of getting a
-// bespoke drawing per threshold — keeps 32 badges visually consistent
-// instead of a grab-bag of unrelated icons.
+// A small set of reusable food/kitchen-themed line-icon shapes, tinted
+// per-badge via `color` (defaults to currentColor). Escalating tiers
+// (streaks, % milestones) reuse the same shape and step through
+// TIER_COLORS instead of getting a bespoke drawing per threshold — keeps
+// 32 badges visually consistent instead of a grab-bag of unrelated icons.
 
 export const TIER_COLORS = [
   "#a0a4ad", // tier 1 — muted slate
@@ -31,36 +31,41 @@ const base = {
   strokeLinejoin: "round" as const,
 };
 
-export function FootprintIcon({ color = "currentColor", className }: IconProps) {
+// First Bite — a cookie with a bite taken out and a few choc-chip dots.
+export function BiteIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <path d="M8 3c-2 0-3 2-3 4.5S6 12 6 15c0 2-1 3-1 4.5A2.5 2.5 0 0 0 7.5 22c1.8 0 2.5-1.3 2.5-3v-6c0-3-1-6-1-6.5C9 5 9 3 8 3Z" />
-      <circle cx="6.2" cy="5.3" r="0.9" fill={color} stroke="none" />
-      <path d="M17 8c2 0 3 2 3 4.5S18 17 18 20c0 1-1 2-2 2s-2-.7-2-2v-4c0-2 1-4 1-4.5 0-2.5 0-6 2-6Z" />
-      <circle cx="18.3" cy="10.2" r="0.9" fill={color} stroke="none" />
+      <path d="M12 4.5c4.4 0 7.5 3.3 7.5 7.3 0 4.3-3.5 7.7-7.8 7.7-4.2 0-7.2-3.2-7.2-7.2 0-1 .2-1.9.5-2.7" />
+      <path d="M12 4.5c-1 1-1 2.3 0 3.3s2.4 1 3.4 0" />
+      <circle cx="10" cy="12.5" r="0.9" fill={color} stroke="none" />
+      <circle cx="14.5" cy="10.5" r="0.9" fill={color} stroke="none" />
+      <circle cx="13" cy="15.5" r="0.9" fill={color} stroke="none" />
     </svg>
   );
 }
 
-export function GearIcon({ color = "currentColor", className }: IconProps) {
+// Recipe Tweaker — a rolling pin, for reshaping your recipe.
+export function RollingPinIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M17.8 6.2l-1.5 1.5M7.7 16.3l-1.5 1.5M17.8 17.8l-1.5-1.5M7.7 7.7 6.2 6.2" />
+      <rect x="7" y="10.5" width="10" height="3" rx="1.5" />
+      <circle cx="5.3" cy="12" r="2.1" />
+      <circle cx="18.7" cy="12" r="2.1" />
     </svg>
   );
 }
 
-export function TrophyIcon({ color = "currentColor", className }: IconProps) {
+// Specials Board — a chalkboard/menu with a few written lines.
+export function MenuIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <path d="M7 4h10v4a5 5 0 0 1-5 5 5 5 0 0 1-5-5V4Z" />
-      <path d="M7 5H4v1a3 3 0 0 0 3 3M17 5h3v1a3 3 0 0 1-3 3" />
-      <path d="M12 13v3M9 20h6M9.5 20c0-1.7.7-2.6 2.5-3 1.8.4 2.5 1.3 2.5 3" />
+      <rect x="4" y="3.5" width="16" height="17" rx="1.5" />
+      <path d="M7.5 8h9M7.5 11.5h9M7.5 15h5.5" />
     </svg>
   );
 }
 
+// Sign-in streaks — a stove-top flame, staying lit day after day.
 export function FlameIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
@@ -70,81 +75,82 @@ export function FlameIcon({ color = "currentColor", className }: IconProps) {
   );
 }
 
-export function ChainIcon({ color = "currentColor", className }: IconProps) {
+// Weigh-in count tiers — a chef's toque, for climbing the kitchen ranks.
+export function ChefHatIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <rect x="3" y="8" width="7" height="8" rx="3.5" />
-      <rect x="14" y="8" width="7" height="8" rx="3.5" />
-      <path d="M9 12h6" />
+      <path d="M8.5 11c-2 0-3.5-1.6-3.5-3.5S6.5 4 8.5 4c.4 0 .8.1 1.1.2A3.5 3.5 0 0 1 12 3a3.5 3.5 0 0 1 2.4 1.2c.3-.1.7-.2 1.1-.2 2 0 3.5 1.6 3.5 3.5S17.5 11 15.5 11" />
+      <path d="M8.5 11h7v3.5h-7z" />
+      <path d="M7 14.5h10V19a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-4.5Z" />
     </svg>
   );
 }
 
-export function StackIcon({ color = "currentColor", className }: IconProps) {
+// Weigh-in streak tiers — a place setting: fork and knife, day after day.
+export function UtensilsIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <rect x="5" y="4" width="12" height="6" rx="1.3" />
-      <path d="M5 12h12M6 12v5.5A1.5 1.5 0 0 0 7.5 19h9a1.5 1.5 0 0 0 1.5-1.5V12" />
-      <path d="m8.5 6.6 1.7 1.7L13.5 5" />
+      <path d="M6 3v5.5a1.5 1.5 0 0 0 3 0V3M7.5 3v18M6 3v3.5M9 3v3.5" />
+      <path d="M17 3c-1.7 2-1.7 5.5 0 7.5.5.6.8 1 .8 1.8V21" />
     </svg>
   );
 }
 
-export function ArrowDownCircleIcon({ color = "currentColor", className }: IconProps) {
+// Percent-loss tiers — an ice cube melting away, drip by drip.
+export function DripIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7.5v8M8.5 12 12 15.5 15.5 12" />
+      <rect x="7" y="3.5" width="10" height="9" rx="1.4" />
+      <path d="M7 8h10M12 3.5v9" />
+      <path d="M9.3 16.2c0 1.4-1.1 1.9-1.1 3.3a1.1 1.1 0 0 0 2.2 0c0-1.4-1.1-1.9-1.1-3.3Z" />
+      <path d="M14.7 16.2c0 1.4-1.1 1.9-1.1 3.3a1.1 1.1 0 0 0 2.2 0c0-1.4-1.1-1.9-1.1-3.3Z" />
     </svg>
   );
 }
 
-export function MedalIcon({ color = "currentColor", className }: IconProps) {
+// Rank medals — a ribboned medal with a fork at its center.
+export function UtensilsMedalIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
       <path d="M8 3h8l-3 7h-2L8 3Z" />
       <circle cx="12" cy="15" r="6" />
-      <path d="M12 12.3 13 15h2l-1.6 1.2.6 2-1.9-1.2-2 1.2.6-2L9 15h2l1-2.7Z" fill={color} stroke="none" />
+      <path d="M9.7 11.6v2.2M12 11.6v2.2M14.3 11.6v2.2" />
+      <path d="M9.7 13.8c0 1 1 1 2.3 1s2.3 0 2.3-1" />
+      <path d="M12 14.8v4.7" />
     </svg>
   );
 }
 
-export function OopsieIcon({ color = "currentColor", className }: IconProps) {
+// Oopsie / Cheat Day — a pepperoni pizza slice.
+export function PizzaSliceIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <path d="M4 15c3-1 4-3 5.5-6.5C10.7 5.8 12 5 13 5.5c1.2.6 1 2-.3 3.8" />
-      <circle cx="17.5" cy="6.5" r="2" />
-      <circle cx="8" cy="18" r="3" />
-      <path d="M6.7 16.8 9.3 19.2M9.3 16.8 6.7 19.2" />
+      <path d="M12 3 4 19h16L12 3Z" />
+      <path d="M6.7 15.2c3.6-1 7-1 10.6 0" />
+      <circle cx="11" cy="10.5" r="0.9" fill={color} stroke="none" />
+      <circle cx="13.5" cy="13" r="0.9" fill={color} stroke="none" />
+      <circle cx="10.3" cy="14" r="0.9" fill={color} stroke="none" />
     </svg>
   );
 }
 
-export function DesktopIcon({ color = "currentColor", className }: IconProps) {
+// Desktop device — a plate set at the dining table.
+export function TableIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <rect x="3" y="4" width="18" height="12" rx="1.5" />
-      <path d="M9 20h6M12 16v4" />
+      <circle cx="12" cy="6.5" r="2.6" />
+      <path d="M3 11h18M5.5 11v9M18.5 11v9" />
     </svg>
   );
 }
 
-export function MobileIcon({ color = "currentColor", className }: IconProps) {
+// Mobile device — a takeout box, food on the go.
+export function TakeoutBoxIcon({ color = "currentColor", className }: IconProps) {
   return (
     <svg {...base} stroke={color} className={className}>
-      <rect x="7" y="2.5" width="10" height="19" rx="2" />
-      <path d="M11 19h2" />
-    </svg>
-  );
-}
-
-export function ScaleIcon({ color = "currentColor", className }: IconProps) {
-  return (
-    <svg {...base} stroke={color} className={className}>
-      <rect x="4" y="4" width="16" height="16" rx="3" />
-      <circle cx="12" cy="12.5" r="4.2" />
-      <path d="M12 8.3v0.1M12 12.5 9.7 11" />
-      <path d="M9.5 4 8 2M14.5 4 16 2" />
+      <path d="M5 9 7 4h10l2 5" />
+      <path d="M5 9h14v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 18V9Z" />
+      <path d="M12 9v3.5" />
     </svg>
   );
 }

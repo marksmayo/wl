@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
 import { formatPercent, formatWeight, initials } from "@/lib/format";
-import { TrophyIcon } from "@/lib/badges/icons";
+import { UtensilsMedalIcon } from "@/lib/badges/icons";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -108,7 +108,7 @@ export function RankingsTable({
                     className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
                     title="View badges"
                   >
-                    <TrophyIcon className="h-3.5 w-3.5" />
+                    <UtensilsMedalIcon className="h-3.5 w-3.5" />
                     {entry.badgeCount}
                   </Link>
                 </td>
