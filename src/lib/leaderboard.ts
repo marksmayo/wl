@@ -26,6 +26,7 @@ export type LeaderboardEntry = {
   predictedFinalWeight: number | null;
   entryCount: number;
   rank: number | null;
+  badgeCount: number;
 };
 
 export type ChartRow = {
@@ -64,6 +65,12 @@ export async function getLeaderboardData() {
     },
     orderBy: { createdAt: "asc" },
   });
+
+  const badgeCounts = await prisma.userBadge.groupBy({
+    by: ["userId"],
+    _count: { badgeId: true },
+  });
+  const badgeCountByUser = new Map(badgeCounts.map((b) => [b.userId, b._count.badgeId]));
 
   const allDateKeys = new Set<string>();
   const seriesByUser = new Map<string, UserSeriesPoint[]>();
@@ -148,6 +155,7 @@ export async function getLeaderboardData() {
       predictedFinalWeight,
       entryCount: series?.length ?? 0,
       rank: null,
+      badgeCount: badgeCountByUser.get(user.id) ?? 0,
     };
   });
 

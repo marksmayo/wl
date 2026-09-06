@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
 import { formatPercent, formatWeight, initials } from "@/lib/format";
+import { TrophyIcon } from "@/lib/badges/icons";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -36,6 +38,7 @@ export function RankingsTable({
             >
               Projected
             </th>
+            <th className="px-4 pb-1 text-right font-medium">Badges</th>
           </tr>
         </thead>
         <tbody>
@@ -89,7 +92,7 @@ export function RankingsTable({
                 <td className={`px-4 py-3 text-right font-mono font-medium ${changeColor}`}>
                   {formatPercent(change)}
                 </td>
-                <td className="rounded-r-xl px-4 py-3 text-right font-mono">
+                <td className="px-4 py-3 text-right font-mono">
                   <div className="text-muted italic">
                     {formatPercent(entry.predictedFinalPercent)}
                   </div>
@@ -98,6 +101,16 @@ export function RankingsTable({
                       {formatWeight(entry.predictedFinalWeight, entry.unit)}
                     </div>
                   )}
+                </td>
+                <td className="rounded-r-xl px-4 py-3 text-right">
+                  <Link
+                    href="/badges"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
+                    title="View badges"
+                  >
+                    <TrophyIcon className="h-3.5 w-3.5" />
+                    {entry.badgeCount}
+                  </Link>
                 </td>
               </tr>
             );
