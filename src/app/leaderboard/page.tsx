@@ -10,6 +10,7 @@ import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
+import { computeBestRankEver } from "@/lib/badges/rankHistory";
 
 export default async function LeaderboardPage() {
   const session = await verifySession();
@@ -22,13 +23,13 @@ export default async function LeaderboardPage() {
   const fallbackDays =
     status === "upcoming" ? daysUntilStart() : status === "active" ? daysRemaining() : 0;
 
-  const myRank = entries.find((e) => e.userId === session.userId)?.rank ?? null;
+  const bestRankEver = computeBestRankEver(chartData, participants);
   const newBadges = await evaluateAndAwardBadges({
     userId: session.userId,
     recordVisit: true,
     device,
     markViewedLeaderboard: true,
-    rank: myRank,
+    rank: bestRankEver.get(session.userId) ?? null,
   });
 
   return (

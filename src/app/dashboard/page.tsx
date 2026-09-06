@@ -20,6 +20,8 @@ import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
+import { computeBestRankEver } from "@/lib/badges/rankHistory";
+import { buildAfterWeighInContext } from "@/lib/badges/weighinContext";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -54,11 +56,18 @@ export default async function DashboardPage() {
   const status = competitionStatus();
   const fallbackDays = status === "active" ? daysRemaining() : 0;
 
+  // Re-derives every weigh-in-based badge from this user's full history
+  // (not just today's submission) on every dashboard load — so anyone who
+  // weighed in before the badge system existed catches up automatically,
+  // no manual backfill needed. Cheap: myWeighIns/chartData/participants are
+  // already fetched above for the page's own rendering.
+  const bestRankEver = computeBestRankEver(chartData, participants);
   const newBadges = await evaluateAndAwardBadges({
     userId: user.id,
     recordVisit: true,
     device,
-    rank: myEntry?.rank ?? null,
+    rank: bestRankEver.get(user.id) ?? null,
+    afterWeighIn: buildAfterWeighInContext(myWeighIns),
   });
 
   return (
