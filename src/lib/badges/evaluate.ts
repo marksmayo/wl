@@ -23,6 +23,8 @@ export type EvaluateOptions = {
   device?: Device;
   markViewedSettings?: boolean;
   markViewedLeaderboard?: boolean;
+  markViewedOwnBadges?: boolean;
+  markViewedOtherBadges?: boolean;
   /** This user's current leaderboard rank, if known from the calling page. */
   rank?: number | null;
   /** Pass right after a weigh-in is logged to check weigh-in based badges. */
@@ -84,6 +86,8 @@ export async function evaluateAndAwardBadges(
   if (opts.device === "mobile") consider("device-mobile", true);
   if (opts.markViewedSettings) consider("viewed-settings", true);
   if (opts.markViewedLeaderboard) consider("viewed-leaderboard", true);
+  if (opts.markViewedOwnBadges) consider("viewed-own-badges", true);
+  if (opts.markViewedOtherBadges) consider("viewed-other-badges", true);
 
   if (opts.rank === 1) consider("rank-1", true);
   if (opts.rank === 2) consider("rank-2", true);

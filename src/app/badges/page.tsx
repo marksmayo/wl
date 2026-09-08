@@ -14,6 +14,7 @@ export default async function BadgesPage() {
     userId: user.id,
     recordVisit: true,
     device,
+    markViewedOwnBadges: true,
   });
 
   const earnedBadges = await prisma.userBadge.findMany({

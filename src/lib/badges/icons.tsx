@@ -154,3 +154,26 @@ export function TakeoutBoxIcon({ color = "currentColor", className }: IconProps)
     </svg>
   );
 }
+
+// Viewed your own badges page — a fridge, checking your own stash.
+export function FridgeIcon({ color = "currentColor", className }: IconProps) {
+  return (
+    <svg {...base} stroke={color} className={className}>
+      <rect x="6" y="2.5" width="12" height="19" rx="1.8" />
+      <path d="M6 9h12" />
+      <path d="M9 4.5v2M9 11v2" />
+    </svg>
+  );
+}
+
+// Viewed someone else's badges page — an eye peeking at their plate.
+export function PlateEnvyIcon({ color = "currentColor", className }: IconProps) {
+  return (
+    <svg {...base} stroke={color} className={className}>
+      <path d="M4 6.8c2.2-2.8 5-4 8-4s5.8 1.2 8 4c-2.2 2.8-5 4-8 4s-5.8-1.2-8-4Z" />
+      <circle cx="12" cy="6.8" r="1.7" fill={color} stroke="none" />
+      <ellipse cx="12" cy="18.5" rx="8" ry="2.4" />
+      <ellipse cx="12" cy="18.5" rx="3.8" ry="1.1" />
+    </svg>
+  );
+}

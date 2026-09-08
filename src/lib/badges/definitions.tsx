@@ -11,6 +11,8 @@ import {
   PizzaSliceIcon,
   TableIcon,
   TakeoutBoxIcon,
+  FridgeIcon,
+  PlateEnvyIcon,
   TIER_COLORS,
   RANK_COLORS,
 } from "./icons";
@@ -162,6 +164,18 @@ export const BADGES: BadgeDefinition[] = [
     name: "Takeout",
     description: "Used the site on a mobile browser.",
     icon: TakeoutBoxIcon,
+  },
+  {
+    id: "viewed-own-badges",
+    name: "Fridge Check",
+    description: "Checked out your own badge collection.",
+    icon: FridgeIcon,
+  },
+  {
+    id: "viewed-other-badges",
+    name: "Plate Envy",
+    description: "Checked out someone else's badge collection.",
+    icon: PlateEnvyIcon,
   },
 ];
 

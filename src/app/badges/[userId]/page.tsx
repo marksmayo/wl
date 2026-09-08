@@ -4,6 +4,9 @@ import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { AnimatedIn } from "@/components/AnimatedIn";
 import { BadgeGallery } from "@/components/BadgeGallery";
+import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
+import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { detectDevice } from "@/lib/badges/device";
 
 export default async function UserBadgesPage({ params }: PageProps<"/badges/[userId]">) {
   const session = await verifySession();
@@ -28,8 +31,17 @@ export default async function UserBadgesPage({ params }: PageProps<"/badges/[use
     select: { badgeId: true, earnedAt: true },
   });
 
+  const device = await detectDevice();
+  const newBadges = await evaluateAndAwardBadges({
+    userId: session.userId,
+    recordVisit: true,
+    device,
+    markViewedOtherBadges: true,
+  });
+
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
+      <BadgeAnnouncer badgeIds={newBadges.map((b) => b.id)} />
       <AnimatedIn>
         <Link
           href="/leaderboard"
