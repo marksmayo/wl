@@ -1,17 +1,20 @@
 import type { ChartRow } from "@/lib/leaderboard";
 
 /**
- * Reconstructs the best (lowest) rank each user has ever held by replaying
+ * Reconstructs every rank (1..maxRank) each user has ever held by replaying
  * the same forward-filled % series the leaderboard chart uses, one
  * historical day at a time — not just whatever a user's rank happens to be
- * right now. Pure/sync: callers pass in data they already fetched from
- * getLeaderboardData() rather than this re-querying it.
+ * right now. A user keeps credit for reaching #4 even after later climbing
+ * to #1, since "ever achieved" badges are permanent once earned. Pure/sync:
+ * callers pass in data they already fetched from getLeaderboardData()
+ * rather than this re-querying it.
  */
-export function computeBestRankEver(
+export function computeRanksEverHeld(
   chartData: ChartRow[],
-  participants: { id: string }[]
-): Map<string, number> {
-  const bestRankEver = new Map<string, number>();
+  participants: { id: string }[],
+  maxRank = 9
+): Map<string, Set<number>> {
+  const ranksEverHeld = new Map<string, Set<number>>();
 
   for (const row of chartData) {
     const dayStandings = participants
@@ -21,13 +24,13 @@ export function computeBestRankEver(
 
     dayStandings.forEach((entry, i) => {
       const rank = i + 1;
-      if (rank > 3) return;
-      const prevBest = bestRankEver.get(entry.userId);
-      if (prevBest === undefined || rank < prevBest) {
-        bestRankEver.set(entry.userId, rank);
+      if (rank > maxRank) return;
+      if (!ranksEverHeld.has(entry.userId)) {
+        ranksEverHeld.set(entry.userId, new Set());
       }
+      ranksEverHeld.get(entry.userId)!.add(rank);
     });
   }
 
-  return bestRankEver;
+  return ranksEverHeld;
 }

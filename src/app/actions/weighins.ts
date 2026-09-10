@@ -8,6 +8,7 @@ import { clampToCompetitionWindow } from "@/lib/competition";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
 import { getLeaderboardData } from "@/lib/leaderboard";
+import { computeRanksEverHeld } from "@/lib/badges/rankHistory";
 
 export type WeighInFormState = {
   error?: string;
@@ -74,14 +75,17 @@ export async function logWeighInAction(
     select: { date: true, weight: true },
   });
 
-  const [{ entries }, device] = await Promise.all([getLeaderboardData(), detectDevice()]);
-  const rank = entries.find((e) => e.userId === session.userId)?.rank ?? null;
+  const [{ chartData, participants }, device] = await Promise.all([
+    getLeaderboardData(),
+    detectDevice(),
+  ]);
+  const ranksEverHeld = computeRanksEverHeld(chartData, participants);
 
   const newBadges = await evaluateAndAwardBadges({
     userId: session.userId,
     recordVisit: true,
     device,
-    rank,
+    ranksEverHeld: ranksEverHeld.get(session.userId),
     afterWeighIn: {
       weighInDates: allWeighIns.map((w) => w.date.toISOString().slice(0, 10)),
       firstWeight: allWeighIns[0].weight,

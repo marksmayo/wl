@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { getLeaderboardData } from "@/lib/leaderboard";
 import { evaluateAndAwardBadges } from "./evaluate";
-import { computeBestRankEver } from "./rankHistory";
+import { computeRanksEverHeld } from "./rankHistory";
 import { buildAfterWeighInContext } from "./weighinContext";
 
 export type BackfillResult = {
@@ -34,7 +34,7 @@ export async function backfillBadges(): Promise<BackfillResult[]> {
   });
 
   const { chartData, participants } = await getLeaderboardData();
-  const bestRankEver = computeBestRankEver(chartData, participants);
+  const ranksEverHeld = computeRanksEverHeld(chartData, participants);
 
   const results: BackfillResult[] = [];
 
@@ -47,7 +47,7 @@ export async function backfillBadges(): Promise<BackfillResult[]> {
 
     const newBadges = await evaluateAndAwardBadges({
       userId: user.id,
-      rank: bestRankEver.get(user.id) ?? null,
+      ranksEverHeld: ranksEverHeld.get(user.id),
       afterWeighIn: buildAfterWeighInContext(weighIns),
     });
 

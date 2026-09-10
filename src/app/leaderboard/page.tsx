@@ -10,7 +10,7 @@ import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
-import { computeBestRankEver } from "@/lib/badges/rankHistory";
+import { computeRanksEverHeld } from "@/lib/badges/rankHistory";
 import { getChangedBadgeCounts } from "@/lib/badges/leaderboardSnapshot";
 
 export default async function LeaderboardPage() {
@@ -24,13 +24,13 @@ export default async function LeaderboardPage() {
   const fallbackDays =
     status === "upcoming" ? daysUntilStart() : status === "active" ? daysRemaining() : 0;
 
-  const bestRankEver = computeBestRankEver(chartData, participants);
+  const ranksEverHeld = computeRanksEverHeld(chartData, participants);
   const newBadges = await evaluateAndAwardBadges({
     userId: session.userId,
     recordVisit: true,
     device,
     markViewedLeaderboard: true,
-    rank: bestRankEver.get(session.userId) ?? null,
+    ranksEverHeld: ranksEverHeld.get(session.userId),
   });
 
   // Reflect any badges just earned on THIS visit (e.g. Specials Board, a

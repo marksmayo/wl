@@ -59,6 +59,17 @@ const PERCENT_TIERS = [
   { pct: 10, name: "Double-Digit Diet" },
 ] as const;
 
+// Ranks 1-3 get their own medal-metal names below; 4-9 continue with other
+// kitchen tools/materials, same shared medal icon, tinted per TIER_COLORS.
+const EXTRA_RANK_TIERS = [
+  { rank: 4, name: "Iron Whisk" },
+  { rank: 5, name: "Steel Tongs" },
+  { rank: 6, name: "Copper Spatula" },
+  { rank: 7, name: "Tin Grater" },
+  { rank: 8, name: "Pewter Peeler" },
+  { rank: 9, name: "Oak Rolling Pin" },
+] as const;
+
 export function signinStreakId(days: number) {
   return `signin-streak-${days}`;
 }
@@ -70,6 +81,9 @@ export function weighinStreakId(days: number) {
 }
 export function percentId(pct: number) {
   return `percent-${String(pct).replace(".", "-")}`;
+}
+export function rankId(rank: number) {
+  return `rank-${rank}`;
 }
 
 // Thresholds exported separately (not just derived from BADGES) so the
@@ -130,23 +144,29 @@ export const BADGES: BadgeDefinition[] = [
     icon: tieredIcon(DripIcon, TIER_COLORS[i]),
   })),
   {
-    id: "rank-1",
+    id: rankId(1),
     name: "Golden Fork",
     description: "Reached #1 on the leaderboard.",
     icon: tieredIcon(UtensilsMedalIcon, RANK_COLORS[1]),
   },
   {
-    id: "rank-2",
+    id: rankId(2),
     name: "Silver Spoon",
     description: "Reached #2 on the leaderboard.",
     icon: tieredIcon(UtensilsMedalIcon, RANK_COLORS[2]),
   },
   {
-    id: "rank-3",
+    id: rankId(3),
     name: "Bronze Ladle",
     description: "Reached #3 on the leaderboard.",
     icon: tieredIcon(UtensilsMedalIcon, RANK_COLORS[3]),
   },
+  ...EXTRA_RANK_TIERS.map((tier, i) => ({
+    id: rankId(tier.rank),
+    name: tier.name,
+    description: `Reached #${tier.rank} on the leaderboard.`,
+    icon: tieredIcon(UtensilsMedalIcon, TIER_COLORS[i]),
+  })),
   {
     id: "oopsie",
     name: "Cheat Day",

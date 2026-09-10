@@ -8,6 +8,7 @@ import {
   weighinCountId,
   weighinStreakId,
   percentId,
+  rankId,
   SIGNIN_STREAK_DAYS,
   WEIGHIN_COUNT_DAYS,
   WEIGHIN_STREAK_DAYS,
@@ -25,8 +26,8 @@ export type EvaluateOptions = {
   markViewedLeaderboard?: boolean;
   markViewedOwnBadges?: boolean;
   markViewedOtherBadges?: boolean;
-  /** This user's current leaderboard rank, if known from the calling page. */
-  rank?: number | null;
+  /** Every leaderboard rank (1-9) this user has ever held, if known from the calling page. */
+  ranksEverHeld?: Iterable<number>;
   /** Pass right after a weigh-in is logged to check weigh-in based badges. */
   afterWeighIn?: {
     /** Every date (YYYY-MM-DD) this user has ever logged, any order. */
@@ -89,9 +90,11 @@ export async function evaluateAndAwardBadges(
   if (opts.markViewedOwnBadges) consider("viewed-own-badges", true);
   if (opts.markViewedOtherBadges) consider("viewed-other-badges", true);
 
-  if (opts.rank === 1) consider("rank-1", true);
-  if (opts.rank === 2) consider("rank-2", true);
-  if (opts.rank === 3) consider("rank-3", true);
+  if (opts.ranksEverHeld) {
+    for (const rank of opts.ranksEverHeld) {
+      consider(rankId(rank), true);
+    }
+  }
 
   if (opts.afterWeighIn) {
     const { weighInDates, firstWeight, latestWeight, previousWeight, everGained } =

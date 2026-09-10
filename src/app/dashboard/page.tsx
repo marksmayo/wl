@@ -20,7 +20,7 @@ import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
-import { computeBestRankEver } from "@/lib/badges/rankHistory";
+import { computeRanksEverHeld } from "@/lib/badges/rankHistory";
 import { buildAfterWeighInContext } from "@/lib/badges/weighinContext";
 
 export default async function DashboardPage() {
@@ -61,12 +61,12 @@ export default async function DashboardPage() {
   // weighed in before the badge system existed catches up automatically,
   // no manual backfill needed. Cheap: myWeighIns/chartData/participants are
   // already fetched above for the page's own rendering.
-  const bestRankEver = computeBestRankEver(chartData, participants);
+  const ranksEverHeld = computeRanksEverHeld(chartData, participants);
   const newBadges = await evaluateAndAwardBadges({
     userId: user.id,
     recordVisit: true,
     device,
-    rank: bestRankEver.get(user.id) ?? null,
+    ranksEverHeld: ranksEverHeld.get(user.id),
     afterWeighIn: buildAfterWeighInContext(myWeighIns),
   });
 
