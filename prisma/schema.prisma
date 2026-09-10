@@ -17,6 +17,11 @@ model User {
   weighIns     WeighIn[]
   badges       UserBadge[]
   dailyVisits  DailyVisit[]
+
+  // Snapshot of every competitor's badge count as of this user's last
+  // leaderboard view — { [userId]: badgeCount } — used to glow/pulse a
+  // row's badge count when it's changed since they last looked.
+  lastSeenBadgeCounts Json @default("{}")
 }
 
 model WeighIn {

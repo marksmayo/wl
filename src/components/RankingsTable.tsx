@@ -9,10 +9,13 @@ export function RankingsTable({
   entries,
   currentUserId,
   colorMap,
+  changedBadgeUserIds,
 }: {
   entries: LeaderboardEntry[];
   currentUserId?: string;
   colorMap: Record<string, string>;
+  /** Users whose badge count has changed since the viewer last looked. */
+  changedBadgeUserIds?: Set<string>;
 }) {
   if (entries.length === 0) {
     return (
@@ -45,6 +48,7 @@ export function RankingsTable({
           {entries.map((entry) => {
             const isSelf = entry.userId === currentUserId;
             const masked = entry.hideWeight && !isSelf;
+            const badgeCountChanged = changedBadgeUserIds?.has(entry.userId);
             const change = entry.percentChange;
             const changeColor =
               change === null
@@ -105,8 +109,12 @@ export function RankingsTable({
                 <td className="rounded-r-xl px-4 py-3 text-right">
                   <Link
                     href={isSelf ? "/badges" : `/badges/${entry.userId}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted transition-colors hover:border-accent/50 hover:text-foreground"
-                    title="View badges"
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-accent/50 hover:text-foreground ${
+                      badgeCountChanged
+                        ? "animate-badge-count-pulse border-accent text-foreground"
+                        : "border-border text-muted"
+                    }`}
+                    title={badgeCountChanged ? "New badges since your last visit!" : "View badges"}
                   >
                     <UtensilsMedalIcon className="h-3.5 w-3.5" />
                     {entry.badgeCount}

@@ -11,6 +11,7 @@ import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
 import { computeBestRankEver } from "@/lib/badges/rankHistory";
+import { getChangedBadgeCounts } from "@/lib/badges/leaderboardSnapshot";
 
 export default async function LeaderboardPage() {
   const session = await verifySession();
@@ -31,6 +32,21 @@ export default async function LeaderboardPage() {
     markViewedLeaderboard: true,
     rank: bestRankEver.get(session.userId) ?? null,
   });
+
+  // Reflect any badges just earned on THIS visit (e.g. Specials Board, a
+  // fresh rank medal) in the viewer's own count before comparing/snapshotting
+  // — otherwise their own row would look unchanged until their next visit.
+  const displayEntries =
+    newBadges.length > 0
+      ? entries.map((e) =>
+          e.userId === session.userId ? { ...e, badgeCount: e.badgeCount + newBadges.length } : e
+        )
+      : entries;
+
+  const changedBadgeUserIds = await getChangedBadgeCounts(
+    session.userId,
+    displayEntries.map((e) => ({ userId: e.userId, badgeCount: e.badgeCount }))
+  );
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
@@ -66,7 +82,12 @@ export default async function LeaderboardPage() {
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Standings</h2>
           <div className="mt-4">
-            <RankingsTable entries={entries} currentUserId={session.userId} colorMap={colorMap} />
+            <RankingsTable
+              entries={displayEntries}
+              currentUserId={session.userId}
+              colorMap={colorMap}
+              changedBadgeUserIds={changedBadgeUserIds}
+            />
           </div>
         </div>
       </AnimatedIn>
