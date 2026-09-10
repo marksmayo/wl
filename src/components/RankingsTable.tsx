@@ -31,6 +31,7 @@ export function RankingsTable({
         <thead>
           <tr className="text-left text-xs uppercase tracking-wider text-muted">
             <th className="px-4 pb-1 font-medium">Rank</th>
+            <th className="px-4 pb-1 font-medium">Badges</th>
             <th className="px-4 pb-1 font-medium">Name</th>
             <th className="px-4 pb-1 font-medium">Start</th>
             <th className="px-4 pb-1 font-medium">Current</th>
@@ -41,7 +42,6 @@ export function RankingsTable({
             >
               Projected
             </th>
-            <th className="px-4 pb-1 text-right font-medium">Badges</th>
           </tr>
         </thead>
         <tbody>
@@ -74,6 +74,20 @@ export function RankingsTable({
                   )}
                 </td>
                 <td className="px-4 py-3">
+                  <Link
+                    href={isSelf ? "/badges" : `/badges/${entry.userId}`}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-accent/50 hover:text-foreground ${
+                      badgeCountChanged
+                        ? "animate-badge-count-pulse border-accent text-foreground"
+                        : "border-border text-muted"
+                    }`}
+                    title={badgeCountChanged ? "New badges since your last visit!" : "View badges"}
+                  >
+                    <UtensilsMedalIcon className="h-3.5 w-3.5" />
+                    {entry.badgeCount}
+                  </Link>
+                </td>
+                <td className="px-4 py-3">
                   <span className="flex items-center gap-2.5">
                     <span
                       className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-semibold text-white"
@@ -96,7 +110,7 @@ export function RankingsTable({
                 <td className={`px-4 py-3 text-right font-mono font-medium ${changeColor}`}>
                   {formatPercent(change)}
                 </td>
-                <td className="px-4 py-3 text-right font-mono">
+                <td className="rounded-r-xl px-4 py-3 text-right font-mono">
                   <div className="text-muted italic">
                     {formatPercent(entry.predictedFinalPercent)}
                   </div>
@@ -105,20 +119,6 @@ export function RankingsTable({
                       {formatWeight(entry.predictedFinalWeight, entry.unit)}
                     </div>
                   )}
-                </td>
-                <td className="rounded-r-xl px-4 py-3 text-right">
-                  <Link
-                    href={isSelf ? "/badges" : `/badges/${entry.userId}`}
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-accent/50 hover:text-foreground ${
-                      badgeCountChanged
-                        ? "animate-badge-count-pulse border-accent text-foreground"
-                        : "border-border text-muted"
-                    }`}
-                    title={badgeCountChanged ? "New badges since your last visit!" : "View badges"}
-                  >
-                    <UtensilsMedalIcon className="h-3.5 w-3.5" />
-                    {entry.badgeCount}
-                  </Link>
                 </td>
               </tr>
             );
