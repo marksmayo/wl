@@ -13,9 +13,10 @@ export type BackfillResult = {
 
 /**
  * Retroactively awards badges based on data that already existed before the
- * badge system shipped — weigh-in history and the leaderboard rank each
- * user has ever held. Safe to re-run: evaluateAndAwardBadges only ever adds
- * badges a user doesn't already have.
+ * badge system shipped — weigh-in history, the leaderboard rank each user
+ * has ever held, and who was first/last (by createdAt) to log on each date.
+ * Safe to re-run: evaluateAndAwardBadges only ever adds badges a user
+ * doesn't already have.
  *
  * This same check also runs automatically for one user at a time on every
  * dashboard load (see src/app/dashboard/page.tsx), so this bulk version is
@@ -35,6 +36,7 @@ export async function backfillBadges(): Promise<BackfillResult[]> {
 
   const { chartData, participants } = await getLeaderboardData();
   const ranksEverHeld = computeRanksEverHeld(chartData, participants);
+  const { firstOfDayUserIds, lastOfDayUserIds } = await computeDayPositions();
 
   const results: BackfillResult[] = [];
 
@@ -48,6 +50,8 @@ export async function backfillBadges(): Promise<BackfillResult[]> {
     const newBadges = await evaluateAndAwardBadges({
       userId: user.id,
       ranksEverHeld: ranksEverHeld.get(user.id),
+      wasFirstOfDay: firstOfDayUserIds.has(user.id),
+      wasLastOfDay: lastOfDayUserIds.has(user.id),
       afterWeighIn: buildAfterWeighInContext(weighIns),
     });
 
@@ -57,4 +61,39 @@ export async function backfillBadges(): Promise<BackfillResult[]> {
   }
 
   return results;
+}
+
+/**
+ * Across every logged date, who was earliest (by createdAt) and who was
+ * latest — for Early Bird Special / Last Call. A user need only hold either
+ * position on ONE date, ever, to earn the badge.
+ */
+async function computeDayPositions(): Promise<{
+  firstOfDayUserIds: Set<string>;
+  lastOfDayUserIds: Set<string>;
+}> {
+  const allEntries = await prisma.weighIn.findMany({
+    select: { date: true, userId: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const byDate = new Map<string, string[]>();
+  for (const entry of allEntries) {
+    const dateKey = entry.date.toISOString().slice(0, 10);
+    const userIds = byDate.get(dateKey);
+    if (userIds) {
+      userIds.push(entry.userId);
+    } else {
+      byDate.set(dateKey, [entry.userId]);
+    }
+  }
+
+  const firstOfDayUserIds = new Set<string>();
+  const lastOfDayUserIds = new Set<string>();
+  for (const userIds of byDate.values()) {
+    firstOfDayUserIds.add(userIds[0]);
+    lastOfDayUserIds.add(userIds[userIds.length - 1]);
+  }
+
+  return { firstOfDayUserIds, lastOfDayUserIds };
 }

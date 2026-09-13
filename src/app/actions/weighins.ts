@@ -69,6 +69,18 @@ export async function logWeighInAction(
   revalidatePath("/dashboard");
   revalidatePath("/leaderboard");
 
+  // Early Bird Special / Last Call: was this user's entry for this date the
+  // earliest or latest (by createdAt) among everyone who's logged for it so
+  // far? createdAt is only set on insert, never touched by the upsert's
+  // update branch, so editing an existing entry later doesn't change this.
+  const dayEntries = await prisma.weighIn.findMany({
+    where: { date: new Date(`${date}T00:00:00.000Z`) },
+    orderBy: { createdAt: "asc" },
+    select: { userId: true },
+  });
+  const wasFirstOfDay = dayEntries[0]?.userId === session.userId;
+  const wasLastOfDay = dayEntries[dayEntries.length - 1]?.userId === session.userId;
+
   const allWeighIns = await prisma.weighIn.findMany({
     where: { userId: session.userId },
     orderBy: { date: "asc" },
@@ -86,6 +98,8 @@ export async function logWeighInAction(
     recordVisit: true,
     device,
     ranksEverHeld: ranksEverHeld.get(session.userId),
+    wasFirstOfDay,
+    wasLastOfDay,
     afterWeighIn: {
       weighInDates: allWeighIns.map((w) => w.date.toISOString().slice(0, 10)),
       firstWeight: allWeighIns[0].weight,

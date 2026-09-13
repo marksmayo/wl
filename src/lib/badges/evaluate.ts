@@ -28,6 +28,10 @@ export type EvaluateOptions = {
   markViewedOtherBadges?: boolean;
   /** Every leaderboard rank (1-9) this user has ever held, if known from the calling page. */
   ranksEverHeld?: Iterable<number>;
+  /** Was this user the earliest logger (by createdAt) for the date they just submitted? */
+  wasFirstOfDay?: boolean;
+  /** Was this user the latest logger (by createdAt) for the date they just submitted, as of now? */
+  wasLastOfDay?: boolean;
   /** Pass right after a weigh-in is logged to check weigh-in based badges. */
   afterWeighIn?: {
     /** Every date (YYYY-MM-DD) this user has ever logged, any order. */
@@ -95,6 +99,9 @@ export async function evaluateAndAwardBadges(
       consider(rankId(rank), true);
     }
   }
+
+  if (opts.wasFirstOfDay) consider("first-of-day", true);
+  if (opts.wasLastOfDay) consider("last-of-day", true);
 
   if (opts.afterWeighIn) {
     const { weighInDates, firstWeight, latestWeight, previousWeight, everGained } =

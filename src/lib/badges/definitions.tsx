@@ -13,6 +13,8 @@ import {
   TakeoutBoxIcon,
   FridgeIcon,
   PlateEnvyIcon,
+  FriedEggIcon,
+  ServiceBellIcon,
   TIER_COLORS,
   RANK_COLORS,
 } from "./icons";
@@ -196,6 +198,18 @@ export const BADGES: BadgeDefinition[] = [
     name: "Plate Envy",
     description: "Checked out someone else's badge collection.",
     icon: PlateEnvyIcon,
+  },
+  {
+    id: "first-of-day",
+    name: "Early Bird Special",
+    description: "Logged the very first weigh-in of the day, at least once.",
+    icon: FriedEggIcon,
+  },
+  {
+    id: "last-of-day",
+    name: "Last Call",
+    description: "Logged after everyone else who'd weighed in that day, at least once.",
+    icon: ServiceBellIcon,
   },
 ];
 
