@@ -87,11 +87,12 @@ export async function logWeighInAction(
     select: { date: true, weight: true },
   });
 
-  const [{ chartData, participants }, device] = await Promise.all([
+  const [{ chartData, participants, entries }, device] = await Promise.all([
     getLeaderboardData(),
     detectDevice(),
   ]);
   const ranksEverHeld = computeRanksEverHeld(chartData, participants);
+  const goalPercent = entries.find((e) => e.userId === session.userId)?.goalPercent ?? null;
 
   const newBadges = await evaluateAndAwardBadges({
     userId: session.userId,
@@ -100,6 +101,7 @@ export async function logWeighInAction(
     ranksEverHeld: ranksEverHeld.get(session.userId),
     wasFirstOfDay,
     wasLastOfDay,
+    goalPercent,
     afterWeighIn: {
       weighInDates: allWeighIns.map((w) => w.date.toISOString().slice(0, 10)),
       firstWeight: allWeighIns[0].weight,

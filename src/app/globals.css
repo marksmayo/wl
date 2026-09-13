@@ -125,3 +125,16 @@ body {
     animation: none;
   }
 }
+
+@keyframes flame-flicker {
+  0%, 100% { transform: rotate(-2deg) scale(1); }
+  50% { transform: rotate(2deg) scale(1.04); }
+}
+.animate-flame-flicker {
+  animation: flame-flicker 1.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-flame-flicker {
+    animation: none;
+  }
+}

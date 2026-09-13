@@ -13,6 +13,9 @@ model User {
   passwordHash String
   unit         String       @default("kg")
   hideWeight   Boolean      @default(false)
+  // Target % weight loss the user set for themselves (e.g. 10 = "lose 10%").
+  // Null means no goal set.
+  goalPercent  Float?
   createdAt    DateTime     @default(now())
   weighIns     WeighIn[]
   badges       UserBadge[]

@@ -199,3 +199,23 @@ export function ServiceBellIcon({ color = "currentColor", className }: IconProps
     </svg>
   );
 }
+
+// Order Placed — a kitchen order ticket, torn edge and all.
+export function OrderTicketIcon({ color = "currentColor", className }: IconProps) {
+  return (
+    <svg {...base} stroke={color} className={className}>
+      <path d="M6 3h12v12.5l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1-1.5 1V3Z" />
+      <path d="M8.5 7h7M8.5 10h5" />
+    </svg>
+  );
+}
+
+// Order Up! — the plate's ready, checked off.
+export function PlateCheckIcon({ color = "currentColor", className }: IconProps) {
+  return (
+    <svg {...base} stroke={color} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M8 12.5 10.5 15 16 9.5" />
+    </svg>
+  );
+}

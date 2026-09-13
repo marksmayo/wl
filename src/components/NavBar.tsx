@@ -35,6 +35,12 @@ export async function NavBar() {
               Badges
             </Link>
             <Link
+              href="/trophy-case"
+              className="text-sm text-muted transition-colors hover:text-foreground"
+            >
+              Trophy Case
+            </Link>
+            <Link
               href="/settings"
               className="text-sm text-muted transition-colors hover:text-foreground"
             >

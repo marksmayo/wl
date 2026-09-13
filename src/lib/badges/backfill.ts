@@ -30,7 +30,7 @@ export type BackfillResult = {
  */
 export async function backfillBadges(): Promise<BackfillResult[]> {
   const users = await prisma.user.findMany({
-    select: { id: true, fullName: true },
+    select: { id: true, fullName: true, goalPercent: true },
     orderBy: { createdAt: "asc" },
   });
 
@@ -52,6 +52,8 @@ export async function backfillBadges(): Promise<BackfillResult[]> {
       ranksEverHeld: ranksEverHeld.get(user.id),
       wasFirstOfDay: firstOfDayUserIds.has(user.id),
       wasLastOfDay: lastOfDayUserIds.has(user.id),
+      markSetGoal: user.goalPercent != null,
+      goalPercent: user.goalPercent,
       afterWeighIn: buildAfterWeighInContext(weighIns),
     });
 

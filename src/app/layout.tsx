@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NavBar } from "@/components/NavBar";
 import { BadgeToastHost } from "@/components/BadgeToastHost";
+import { ConfettiBurst } from "@/components/ConfettiBurst";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <NavBar />
         {children}
+        <ConfettiBurst />
         <BadgeToastHost />
       </body>
     </html>

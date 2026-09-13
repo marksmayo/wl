@@ -32,6 +32,10 @@ export type EvaluateOptions = {
   wasFirstOfDay?: boolean;
   /** Was this user the latest logger (by createdAt) for the date they just submitted, as of now? */
   wasLastOfDay?: boolean;
+  /** Set right after successfully setting a weight-loss goal. */
+  markSetGoal?: boolean;
+  /** This user's currently-set weight-loss goal (%), if any — checked against afterWeighIn's droppedPct. */
+  goalPercent?: number | null;
   /** Pass right after a weigh-in is logged to check weigh-in based badges. */
   afterWeighIn?: {
     /** Every date (YYYY-MM-DD) this user has ever logged, any order. */
@@ -102,6 +106,7 @@ export async function evaluateAndAwardBadges(
 
   if (opts.wasFirstOfDay) consider("first-of-day", true);
   if (opts.wasLastOfDay) consider("last-of-day", true);
+  if (opts.markSetGoal) consider("goal-set", true);
 
   if (opts.afterWeighIn) {
     const { weighInDates, firstWeight, latestWeight, previousWeight, everGained } =
@@ -122,6 +127,9 @@ export async function evaluateAndAwardBadges(
       const droppedPct = ((firstWeight - latestWeight) / firstWeight) * 100;
       for (const pct of PERCENT_THRESHOLDS) {
         consider(percentId(pct), droppedPct >= pct);
+      }
+      if (opts.goalPercent != null && opts.goalPercent > 0) {
+        consider("goal-met", droppedPct >= opts.goalPercent);
       }
     }
 

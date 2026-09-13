@@ -87,6 +87,9 @@ export function MobileNav(props: Props) {
               <Link href="/badges" className={linkClass}>
                 Badges
               </Link>
+              <Link href="/trophy-case" className={linkClass}>
+                Trophy Case
+              </Link>
               <Link href="/settings" className={linkClass}>
                 Settings
               </Link>

@@ -17,3 +17,20 @@ export function longestStreak(dateKeys: string[]): number {
   }
   return longest;
 }
+
+// Consecutive days ending exactly at todayKey (walking backward day by day
+// until the chain breaks) — the user's live, ongoing streak, as opposed to
+// longestStreak's all-time best. Used for the dashboard's streak flame,
+// which should shrink back down if a streak lapses, not stay lit forever.
+export function currentStreak(dateKeys: string[], todayKey: string): number {
+  const set = new Set(dateKeys);
+  let count = 0;
+  let cursor = todayKey;
+  while (set.has(cursor)) {
+    count++;
+    const d = new Date(`${cursor}T00:00:00.000Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    cursor = d.toISOString().slice(0, 10);
+  }
+  return count;
+}

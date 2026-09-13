@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/session";
 import { verifySession } from "@/lib/dal";
+import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { buildAfterWeighInContext } from "@/lib/badges/weighinContext";
 
 export type UpdateNameFormState = {
   error?: string;
@@ -113,4 +115,63 @@ export async function updatePrivacyAction(
   revalidatePath("/leaderboard");
 
   return { success: true };
+}
+
+export type UpdateGoalFormState = {
+  error?: string;
+  success?: boolean;
+  newBadges?: string[];
+} | undefined;
+
+const UpdateGoalSchema = z.object({
+  goalPercent: z.coerce
+    .number({ error: "Enter a valid percentage." })
+    .positive("Goal must be greater than 0%.")
+    .max(100, "That doesn't look like a valid goal."),
+});
+
+export async function updateGoalAction(
+  _prevState: UpdateGoalFormState,
+  formData: FormData
+): Promise<UpdateGoalFormState> {
+  const session = await verifySession();
+  const raw = formData.get("goalPercent");
+  const rawStr = typeof raw === "string" ? raw.trim() : "";
+
+  // Empty input clears the goal entirely.
+  if (rawStr === "") {
+    await prisma.user.update({ where: { id: session.userId }, data: { goalPercent: null } });
+    revalidatePath("/leaderboard");
+    revalidatePath("/dashboard");
+    return { success: true };
+  }
+
+  const parsed = UpdateGoalSchema.safeParse({ goalPercent: rawStr });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const { goalPercent } = parsed.data;
+
+  await prisma.user.update({ where: { id: session.userId }, data: { goalPercent } });
+  revalidatePath("/leaderboard");
+  revalidatePath("/dashboard");
+
+  // Check goal-met immediately too — if the user already exceeds a goal
+  // they've just (re)set (e.g. lowering it below what they've already
+  // lost), they shouldn't have to wait for their next weigh-in to get it.
+  const weighIns = await prisma.weighIn.findMany({
+    where: { userId: session.userId },
+    orderBy: { date: "asc" },
+    select: { date: true, weight: true },
+  });
+
+  const newBadges = await evaluateAndAwardBadges({
+    userId: session.userId,
+    markSetGoal: true,
+    goalPercent,
+    afterWeighIn: buildAfterWeighInContext(weighIns),
+  });
+
+  return { success: true, newBadges: newBadges.map((b) => b.id) };
 }

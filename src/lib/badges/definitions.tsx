@@ -15,6 +15,8 @@ import {
   PlateEnvyIcon,
   FriedEggIcon,
   ServiceBellIcon,
+  OrderTicketIcon,
+  PlateCheckIcon,
   TIER_COLORS,
   RANK_COLORS,
 } from "./icons";
@@ -210,6 +212,18 @@ export const BADGES: BadgeDefinition[] = [
     name: "Last Call",
     description: "Logged after everyone else who'd weighed in that day, at least once.",
     icon: ServiceBellIcon,
+  },
+  {
+    id: "goal-set",
+    name: "Order Placed",
+    description: "Set a weight-loss goal.",
+    icon: OrderTicketIcon,
+  },
+  {
+    id: "goal-met",
+    name: "Order Up!",
+    description: "Reached your weight-loss goal.",
+    icon: PlateCheckIcon,
   },
 ];
 

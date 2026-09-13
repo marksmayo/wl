@@ -22,6 +22,8 @@ import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
 import { computeRanksEverHeld } from "@/lib/badges/rankHistory";
 import { buildAfterWeighInContext } from "@/lib/badges/weighinContext";
+import { currentStreak } from "@/lib/badges/streaks";
+import { LiveStreakFlame } from "@/components/LiveStreakFlame";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -67,8 +69,16 @@ export default async function DashboardPage() {
     recordVisit: true,
     device,
     ranksEverHeld: ranksEverHeld.get(user.id),
+    goalPercent: user.goalPercent,
     afterWeighIn: buildAfterWeighInContext(myWeighIns),
   });
+
+  const visits = await prisma.dailyVisit.findMany({
+    where: { userId: user.id },
+    select: { date: true },
+  });
+  const visitDates = visits.map((v) => v.date.toISOString().slice(0, 10));
+  const fallbackStreak = currentStreak(visitDates, today);
 
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
@@ -127,6 +137,14 @@ export default async function DashboardPage() {
           </div>
         </div>
       </AnimatedStagger>
+
+      {/* LiveStreakFlame (and StreakFlame within it) render nothing when the
+          streak is 0 — not gated here, since the server's UTC fallback and
+          the visitor's real local-date streak can briefly disagree right
+          around midnight for AU/NZ visitors. */}
+      <AnimatedIn delay={0.18} className="mt-6">
+        <LiveStreakFlame visitDates={visitDates} fallbackStreak={fallbackStreak} />
+      </AnimatedIn>
 
       <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[380px_1fr]">
         <AnimatedIn delay={0.1}>

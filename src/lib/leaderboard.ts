@@ -29,6 +29,9 @@ export type LeaderboardEntry = {
   entryCount: number;
   rank: number | null;
   badgeCount: number;
+  goalPercent: number | null;
+  /** 0-100, how far toward goalPercent this user's actual loss is so far. Null if no goal set. */
+  goalProgressPercent: number | null;
 };
 
 export type ChartRow = {
@@ -54,6 +57,7 @@ export async function getLeaderboardData() {
       fullName: true,
       unit: true,
       hideWeight: true,
+      goalPercent: true,
       weighIns: {
         where: {
           date: {
@@ -145,6 +149,14 @@ export async function getLeaderboardData() {
       }
     }
 
+    // Progress toward their own goal, not the raw loss % — e.g. someone who
+    // set a 10% goal and has lost 6% so far is 60% of the way there.
+    let goalProgressPercent: number | null = null;
+    if (user.goalPercent && user.goalPercent > 0) {
+      const actualLossPercent = last ? Math.max(0, -last.percentChange) : 0;
+      goalProgressPercent = Math.min(100, (actualLossPercent / user.goalPercent) * 100);
+    }
+
     return {
       userId: user.id,
       fullName: user.fullName,
@@ -158,6 +170,8 @@ export async function getLeaderboardData() {
       entryCount: series?.length ?? 0,
       rank: null,
       badgeCount: badgeCountByUser.get(user.id) ?? 0,
+      goalPercent: user.goalPercent,
+      goalProgressPercent,
     };
   });
 
