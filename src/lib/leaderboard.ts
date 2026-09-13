@@ -7,6 +7,7 @@ import {
   competitionStatus,
   todayDateKey,
   computeMissingList,
+  computeWeighedInList,
 } from "@/lib/competition";
 
 export type UserSeriesPoint = {
@@ -185,13 +186,16 @@ export async function getLeaderboardData() {
   // fallback — the client corrects it to the visitor's real local date
   // (see LiveMissingToday), since AU/NZ run 10-13 hours ahead of UTC.
   const todayKey = todayDateKey();
-  const missingToday = competitionStatus() === "active" ? computeMissingList(roster, todayKey) : [];
+  const isActive = competitionStatus() === "active";
+  const missingToday = isActive ? computeMissingList(roster, todayKey) : [];
+  const weighedInToday = isActive ? computeWeighedInList(roster, todayKey) : [];
 
   return {
     chartData,
     entries: [...ranked, ...unranked],
     participants: users.map((u) => ({ id: u.id, fullName: u.fullName })),
     missingToday,
+    weighedInToday,
     roster,
   };
 }

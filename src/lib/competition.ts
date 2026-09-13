@@ -103,3 +103,15 @@ export function computeMissingList(
   missing.sort((a, b) => b.daysSinceLastWeighIn - a.daysSinceLastWeighIn);
   return missing;
 }
+
+export type Person = { id: string; fullName: string };
+
+/** The complement of computeMissingList: everyone who HAS logged today. */
+export function computeWeighedInList(
+  roster: { id: string; fullName: string; loggedDates: string[] }[],
+  todayKey: string
+): Person[] {
+  return roster
+    .filter((r) => r.loggedDates.includes(todayKey))
+    .map((r) => ({ id: r.id, fullName: r.fullName }));
+}

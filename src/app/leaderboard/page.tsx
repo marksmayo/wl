@@ -5,6 +5,7 @@ import { competitionStatus, daysRemaining, daysUntilStart } from "@/lib/competit
 import { WeightChart } from "@/components/WeightChart";
 import { RankingsTable } from "@/components/RankingsTable";
 import { LiveMissingToday } from "@/components/LiveMissingToday";
+import { LiveWeighedInToday } from "@/components/LiveWeighedInToday";
 import { AnimatedIn } from "@/components/AnimatedIn";
 import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
@@ -15,7 +16,7 @@ import { getChangedBadgeCounts } from "@/lib/badges/leaderboardSnapshot";
 
 export default async function LeaderboardPage() {
   const session = await verifySession();
-  const [{ chartData, entries, participants, missingToday, roster }, device] = await Promise.all([
+  const [{ chartData, entries, participants, missingToday, weighedInToday, roster }, device] = await Promise.all([
     getLeaderboardData(),
     detectDevice(),
   ]);
@@ -79,6 +80,10 @@ export default async function LeaderboardPage() {
       </AnimatedIn>
 
       <AnimatedIn delay={0.25} className="mt-6">
+        <LiveWeighedInToday roster={roster} fallbackPeople={weighedInToday} />
+      </AnimatedIn>
+
+      <AnimatedIn delay={0.3} className="mt-6">
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Standings</h2>
           <div className="mt-4">
