@@ -1,10 +1,9 @@
 "use client";
 
 import { useRef, useSyncExternalStore } from "react";
-import { competitionStatus, localDateKey } from "@/lib/competition";
+import { competitionStatus, localDateKey, computeMissingList, type MissingPerson } from "@/lib/competition";
 import { MissingToday } from "@/components/MissingToday";
 
-type Person = { id: string; fullName: string };
 type RosterEntry = { id: string; fullName: string; loggedDates: string[] };
 
 function subscribe() {
@@ -26,26 +25,21 @@ export function LiveMissingToday({
   fallbackPeople,
 }: {
   roster: RosterEntry[];
-  fallbackPeople: Person[];
+  fallbackPeople: MissingPerson[];
 }) {
-  const cacheRef = useRef<{ key: string; value: Person[] } | null>(null);
+  const cacheRef = useRef<{ key: string; value: MissingPerson[] } | null>(null);
 
-  function getSnapshot(): Person[] {
+  function getSnapshot(): MissingPerson[] {
     const todayKey = localDateKey(new Date());
     if (cacheRef.current && cacheRef.current.key === todayKey) {
       return cacheRef.current.value;
     }
-    const value =
-      competitionStatus(todayKey) === "active"
-        ? roster
-            .filter((r) => !r.loggedDates.includes(todayKey))
-            .map((r) => ({ id: r.id, fullName: r.fullName }))
-        : [];
+    const value = competitionStatus(todayKey) === "active" ? computeMissingList(roster, todayKey) : [];
     cacheRef.current = { key: todayKey, value };
     return value;
   }
 
-  function getServerSnapshot(): Person[] {
+  function getServerSnapshot(): MissingPerson[] {
     return fallbackPeople;
   }
 

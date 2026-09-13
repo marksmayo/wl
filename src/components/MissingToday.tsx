@@ -1,6 +1,6 @@
-type Participant = { id: string; fullName: string };
+import type { MissingPerson } from "@/lib/competition";
 
-export function MissingToday({ people }: { people: Participant[] }) {
+export function MissingToday({ people }: { people: MissingPerson[] }) {
   if (people.length === 0) return null;
 
   return (
@@ -15,6 +15,9 @@ export function MissingToday({ people }: { people: Participant[] }) {
             style={{ animationDelay: `${Math.min(i, 20) * 0.05}s` }}
           >
             {person.fullName}
+            {person.daysSinceLastWeighIn > 1 && (
+              <span className="ml-1.5 text-danger">({person.daysSinceLastWeighIn} days)</span>
+            )}
           </span>
         ))}
       </div>

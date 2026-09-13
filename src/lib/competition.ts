@@ -68,3 +68,38 @@ export function daysRemaining(todayKey: string = todayDateKey()): number {
   const diff = COMPETITION_END_DATE.getTime() - new Date(`${todayKey}T00:00:00.000Z`).getTime();
   return Math.max(0, Math.round(diff / 86_400_000));
 }
+
+function daysBetweenKeys(laterKey: string, earlierKey: string): number {
+  const laterMs = new Date(`${laterKey}T00:00:00.000Z`).getTime();
+  const earlierMs = new Date(`${earlierKey}T00:00:00.000Z`).getTime();
+  return Math.round((laterMs - earlierMs) / 86_400_000);
+}
+
+export type MissingPerson = { id: string; fullName: string; daysSinceLastWeighIn: number };
+
+/**
+ * People missing today's weigh-in, each tagged with how many days it's been
+ * since their last logged entry (or since the competition started, for
+ * someone who's never logged at all — always at least as large a gap as
+ * anyone who's logged at least once, so they naturally sort to the top).
+ * Ordered least-recent first. Shared between the server's UTC-based
+ * fallback and the client's visitor-local-date correction so both compute
+ * "missing" and the day count the same way.
+ */
+export function computeMissingList(
+  roster: { id: string; fullName: string; loggedDates: string[] }[],
+  todayKey: string
+): MissingPerson[] {
+  const missing = roster
+    .filter((r) => !r.loggedDates.includes(todayKey))
+    .map((r) => {
+      // loggedDates is populated in ascending date order, so the last
+      // element is the most recent entry.
+      const lastDateKey = r.loggedDates.length > 0 ? r.loggedDates[r.loggedDates.length - 1] : null;
+      const daysSinceLastWeighIn = daysBetweenKeys(todayKey, lastDateKey ?? COMPETITION_START);
+      return { id: r.id, fullName: r.fullName, daysSinceLastWeighIn };
+    });
+
+  missing.sort((a, b) => b.daysSinceLastWeighIn - a.daysSinceLastWeighIn);
+  return missing;
+}

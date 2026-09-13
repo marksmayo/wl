@@ -6,6 +6,7 @@ import {
   COMPETITION_END_DATE,
   competitionStatus,
   todayDateKey,
+  computeMissingList,
 } from "@/lib/competition";
 
 export type UserSeriesPoint = {
@@ -169,26 +170,22 @@ export async function getLeaderboardData() {
 
   const unranked = entries.filter((e) => e.percentChange === null);
 
+  // Every user's logged date-keys, so the client can redo the "who's
+  // missing today" check (and the day-count) against the visitor's own
+  // local date.
+  const roster = users.map((user) => ({
+    id: user.id,
+    fullName: user.fullName,
+    loggedDates: user.weighIns.map((w) => dateToKey(w.date)),
+  }));
+
   // Only meaningful during the active window — before it starts nobody is
   // expected to have logged anything yet, and after it ends there's no
   // "today" to chase. This UTC-based version is only the SSR/no-JS
   // fallback — the client corrects it to the visitor's real local date
   // (see LiveMissingToday), since AU/NZ run 10-13 hours ahead of UTC.
   const todayKey = todayDateKey();
-  const missingToday =
-    competitionStatus() === "active"
-      ? users
-          .filter((user) => !user.weighIns.some((w) => dateToKey(w.date) === todayKey))
-          .map((user) => ({ id: user.id, fullName: user.fullName }))
-      : [];
-
-  // Every user's logged date-keys, so the client can redo the "who's
-  // missing today" check against the visitor's own local date.
-  const roster = users.map((user) => ({
-    id: user.id,
-    fullName: user.fullName,
-    loggedDates: user.weighIns.map((w) => dateToKey(w.date)),
-  }));
+  const missingToday = competitionStatus() === "active" ? computeMissingList(roster, todayKey) : [];
 
   return {
     chartData,
