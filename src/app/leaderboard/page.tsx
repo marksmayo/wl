@@ -3,7 +3,7 @@ import { getLeaderboardData } from "@/lib/leaderboard";
 import { buildColorMap } from "@/lib/chartColors";
 import { competitionStatus, daysRemaining, daysUntilStart } from "@/lib/competition";
 import { WeightChart } from "@/components/WeightChart";
-import { RankingsTable } from "@/components/RankingsTable";
+import { RankingsList } from "@/components/RankingsList";
 import { LiveMissingToday } from "@/components/LiveMissingToday";
 import { LiveWeighedInToday } from "@/components/LiveWeighedInToday";
 import { AnimatedIn } from "@/components/AnimatedIn";
@@ -87,7 +87,7 @@ export default async function LeaderboardPage() {
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Standings</h2>
           <div className="mt-4">
-            <RankingsTable
+            <RankingsList
               entries={displayEntries}
               currentUserId={session.userId}
               colorMap={colorMap}

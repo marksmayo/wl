@@ -78,7 +78,7 @@ export function WeightChart({
   }
 
   return (
-    <div className="h-80 w-full sm:h-96">
+    <div className="h-80 w-full overflow-hidden sm:h-96">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
           <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
