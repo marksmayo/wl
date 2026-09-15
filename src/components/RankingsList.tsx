@@ -4,7 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
-import { formatPercent, formatWeight, initials } from "@/lib/format";
+import { formatPercent, formatWeight } from "@/lib/format";
 import { UtensilsMedalIcon } from "@/lib/badges/icons";
 import { GoalRing } from "@/components/GoalRing";
 
@@ -136,26 +136,20 @@ export function RankingsList({
               aria-hidden="true"
             />
 
-            <div className="flex items-center justify-between gap-3 pl-2">
-              <div className="flex min-w-0 items-center gap-3">
+            <div className="flex items-center justify-between gap-2 pl-2 sm:gap-3">
+              <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                 {rankBadge ? (
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-base ${rankBadge.gradient} ${rankBadge.glow}`}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm sm:h-9 sm:w-9 sm:text-base ${rankBadge.gradient} ${rankBadge.glow}`}
                     title={`Rank #${entry.rank}`}
                   >
                     {MEDALS[entry.rank! - 1]}
                   </span>
                 ) : (
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-mono text-xs text-muted">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-mono text-xs text-muted sm:h-9 sm:w-9">
                     {entry.rank ? `#${entry.rank}` : "—"}
                   </span>
                 )}
-                <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-2 ring-background"
-                  style={{ backgroundColor: colorMap[entry.userId] }}
-                >
-                  {initials(entry.fullName)}
-                </span>
                 <span className="min-w-0 truncate text-[15px] font-medium text-foreground">
                   {entry.fullName}
                 </span>
