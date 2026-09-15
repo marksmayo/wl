@@ -14,8 +14,14 @@ model User {
   unit         String       @default("kg")
   hideWeight   Boolean      @default(false)
   // Target % weight loss the user set for themselves (e.g. 10 = "lose 10%").
-  // Null means no goal set.
+  // This is the canonical value used everywhere (ranking, badges, the
+  // leaderboard ring) — null means no goal set. When the goal was entered
+  // as a target weight, goalWeight holds that raw value (in the user's
+  // unit, at the time it was set) purely so Settings can redisplay it;
+  // goalPercent is derived from it once, against the user's first
+  // weigh-in, and stays the source of truth from then on.
   goalPercent  Float?
+  goalWeight   Float?
   createdAt    DateTime     @default(now())
   weighIns     WeighIn[]
   badges       UserBadge[]

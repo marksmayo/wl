@@ -229,7 +229,20 @@ export function RankingsList({
                     Goal
                   </div>
                   <div className="mt-1.5">
-                    <GoalRing progress={entry.goalProgressPercent} />
+                    {isSelf && entry.goalProgressPercent === null ? (
+                      <Link
+                        href="/settings"
+                        className="inline-block rounded-full transition-transform hover:scale-110"
+                        title="No goal set — click to set one"
+                      >
+                        <GoalRing
+                          progress={null}
+                          title="No goal set — click to set one"
+                        />
+                      </Link>
+                    ) : (
+                      <GoalRing progress={entry.goalProgressPercent} />
+                    )}
                   </div>
                 </div>
                 <div>

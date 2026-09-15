@@ -26,6 +26,7 @@ export const getCurrentUser = cache(async () => {
       unit: true,
       hideWeight: true,
       goalPercent: true,
+      goalWeight: true,
       createdAt: true,
     },
   });

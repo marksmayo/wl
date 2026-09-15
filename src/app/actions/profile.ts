@@ -86,9 +86,13 @@ export async function updateUnitAction(
   // it — otherwise lbs and kg values would get mixed in the same series.
   const factor = nextUnit === "kg" ? 1 / LBS_PER_KG : LBS_PER_KG;
 
+  // goalPercent is unit-agnostic and needs no conversion; goalWeight is a
+  // raw value in the old unit, kept only so Settings can redisplay it.
+  const goalWeight = user.goalWeight == null ? null : Math.round(user.goalWeight * factor * 100) / 100;
+
   await prisma.$transaction([
     prisma.$executeRaw`UPDATE "WeighIn" SET weight = ROUND((weight * ${factor})::numeric, 2)::float8 WHERE "userId" = ${session.userId}`,
-    prisma.user.update({ where: { id: session.userId }, data: { unit: nextUnit } }),
+    prisma.user.update({ where: { id: session.userId }, data: { unit: nextUnit, goalWeight } }),
   ]);
 
   revalidatePath("/", "layout");
@@ -123,37 +127,65 @@ export type UpdateGoalFormState = {
   newBadges?: string[];
 } | undefined;
 
-const UpdateGoalSchema = z.object({
-  goalPercent: z.coerce
-    .number({ error: "Enter a valid percentage." })
-    .positive("Goal must be greater than 0%.")
-    .max(100, "That doesn't look like a valid goal."),
-});
+const GoalModeSchema = z.enum(["percent", "weight"]);
+
+const GoalValueSchema = z.coerce
+  .number({ error: "Enter a valid number." })
+  .positive("Goal must be greater than 0.");
 
 export async function updateGoalAction(
   _prevState: UpdateGoalFormState,
   formData: FormData
 ): Promise<UpdateGoalFormState> {
   const session = await verifySession();
-  const raw = formData.get("goalPercent");
+  const raw = formData.get("goalValue");
   const rawStr = typeof raw === "string" ? raw.trim() : "";
 
-  // Empty input clears the goal entirely.
+  // Empty input clears the goal entirely, regardless of mode.
   if (rawStr === "") {
-    await prisma.user.update({ where: { id: session.userId }, data: { goalPercent: null } });
+    await prisma.user.update({
+      where: { id: session.userId },
+      data: { goalPercent: null, goalWeight: null },
+    });
     revalidatePath("/leaderboard");
     revalidatePath("/dashboard");
     return { success: true };
   }
 
-  const parsed = UpdateGoalSchema.safeParse({ goalPercent: rawStr });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  const modeParsed = GoalModeSchema.safeParse(formData.get("goalMode"));
+  const mode = modeParsed.success ? modeParsed.data : "percent";
+
+  const valueParsed = GoalValueSchema.safeParse(rawStr);
+  if (!valueParsed.success) {
+    return { error: valueParsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const value = valueParsed.data;
+
+  let goalPercent: number;
+  let goalWeight: number | null = null;
+
+  if (mode === "weight") {
+    const first = await prisma.weighIn.findFirst({
+      where: { userId: session.userId },
+      orderBy: { date: "asc" },
+      select: { weight: true },
+    });
+    if (!first) {
+      return { error: "Log a weigh-in first, then set a target weight." };
+    }
+    if (value >= first.weight) {
+      return { error: "Target weight should be less than your starting weight." };
+    }
+    goalPercent = ((first.weight - value) / first.weight) * 100;
+    goalWeight = value;
+  } else {
+    if (value > 100) {
+      return { error: "That doesn't look like a valid goal." };
+    }
+    goalPercent = value;
   }
 
-  const { goalPercent } = parsed.data;
-
-  await prisma.user.update({ where: { id: session.userId }, data: { goalPercent } });
+  await prisma.user.update({ where: { id: session.userId }, data: { goalPercent, goalWeight } });
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
 

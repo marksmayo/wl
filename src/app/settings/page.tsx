@@ -52,7 +52,11 @@ export default async function SettingsPage() {
         <div className="settings-card glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Weight-loss goal</h2>
           <div className="mt-4">
-            <EditGoalForm currentGoalPercent={user.goalPercent} />
+            <EditGoalForm
+              currentGoalPercent={user.goalPercent}
+              currentGoalWeight={user.goalWeight}
+              unit={user.unit}
+            />
           </div>
         </div>
       </AnimatedStagger>
