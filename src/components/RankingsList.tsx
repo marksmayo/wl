@@ -10,6 +10,38 @@ import { GoalRing } from "@/components/GoalRing";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
+const RANK_BADGE_STYLE = [
+  {
+    gradient: "from-yellow-300 to-amber-600",
+    glow: "shadow-[0_0_14px_-3px_rgba(250,204,21,0.75)]",
+  },
+  {
+    gradient: "from-slate-200 to-slate-400",
+    glow: "shadow-[0_0_14px_-3px_rgba(203,213,225,0.6)]",
+  },
+  {
+    gradient: "from-orange-300 to-amber-700",
+    glow: "shadow-[0_0_14px_-3px_rgba(217,119,6,0.6)]",
+  },
+];
+
+// Small hand-rolled trend line (no charting library needed for 14 points) —
+// normalized to its own min/max so a flat-ish week still shows visible shape.
+function sparklinePath(values: number[], width: number, height: number): string {
+  if (values.length < 2) return "";
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const stepX = width / (values.length - 1);
+  return values
+    .map((v, i) => {
+      const x = i * stepX;
+      const y = height - ((v - min) / range) * height;
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
 export function RankingsList({
   entries,
   currentUserId,
@@ -78,98 +110,150 @@ export function RankingsList({
         const masked = entry.hideWeight && !isSelf;
         const badgeCountChanged = changedBadgeUserIds?.has(entry.userId);
         const change = entry.percentChange;
+        const isGoodChange = change !== null && change <= 0;
         const changeColor =
-          change === null ? "text-muted" : change <= 0 ? "text-accent" : "text-danger";
+          change === null ? "text-muted" : isGoodChange ? "text-accent" : "text-danger";
+        const rankBadge = entry.rank && entry.rank <= 3 ? RANK_BADGE_STYLE[entry.rank - 1] : null;
+        const trendColor =
+          entry.sparkline.length >= 2 &&
+          entry.sparkline[entry.sparkline.length - 1] <= entry.sparkline[0]
+            ? "var(--accent)"
+            : "var(--danger)";
 
         return (
           <div
             key={entry.userId}
             data-user-id={entry.userId}
-            className={`rounded-2xl border p-4 transition-colors sm:p-5 ${
-              isSelf ? "border-accent/30 bg-accent/10" : "border-border bg-surface"
+            className={`group relative overflow-hidden rounded-2xl border p-4 transition-all duration-200 sm:p-5 ${
+              isSelf
+                ? "border-accent/40 bg-gradient-to-br from-accent/10 via-surface to-surface shadow-[0_0_0_1px_rgba(52,224,161,0.12),0_12px_28px_-16px_rgba(52,224,161,0.45)]"
+                : "border-border bg-surface hover:-translate-y-0.5 hover:border-white/15 hover:bg-surface-2/70 hover:shadow-xl hover:shadow-black/20"
             }`}
           >
-            <div className="flex items-center justify-between gap-3">
+            <span
+              className="absolute inset-y-0 left-0 w-1 rounded-l-2xl"
+              style={{ backgroundColor: colorMap[entry.userId] }}
+              aria-hidden="true"
+            />
+
+            <div className="flex items-center justify-between gap-3 pl-2">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="w-7 shrink-0 text-center font-mono text-sm text-muted">
-                  {entry.rank ? (
-                    <span className="inline-flex items-center gap-1.5">
-                      {MEDALS[entry.rank - 1] ?? `#${entry.rank}`}
-                    </span>
-                  ) : (
-                    "—"
-                  )}
-                </span>
+                {rankBadge ? (
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-base ${rankBadge.gradient} ${rankBadge.glow}`}
+                    title={`Rank #${entry.rank}`}
+                  >
+                    {MEDALS[entry.rank! - 1]}
+                  </span>
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-mono text-xs text-muted">
+                    {entry.rank ? `#${entry.rank}` : "—"}
+                  </span>
+                )}
                 <span
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ring-2 ring-background"
                   style={{ backgroundColor: colorMap[entry.userId] }}
                 >
                   {initials(entry.fullName)}
                 </span>
-                <span className="min-w-0 truncate font-medium text-foreground">
+                <span className="min-w-0 truncate text-[15px] font-medium text-foreground">
                   {entry.fullName}
-                  {isSelf && <span className="ml-2 text-xs font-normal text-muted">(you)</span>}
                 </span>
+                {isSelf && (
+                  <span className="hidden shrink-0 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent sm:inline-block">
+                    You
+                  </span>
+                )}
               </div>
-              <Link
-                href={isSelf ? "/badges" : `/badges/${entry.userId}`}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-accent/50 hover:text-foreground ${
-                  badgeCountChanged
-                    ? "animate-badge-count-pulse border-accent text-foreground"
-                    : "border-border text-muted"
-                }`}
-                title={badgeCountChanged ? "New badges since your last visit!" : "View badges"}
-              >
-                <UtensilsMedalIcon className="h-3.5 w-3.5" />
-                {entry.badgeCount}
-              </Link>
+
+              <div className="flex shrink-0 items-center gap-3">
+                {entry.sparkline.length >= 2 && (
+                  <svg
+                    width={56}
+                    height={20}
+                    className="hidden sm:block"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d={sparklinePath(entry.sparkline, 56, 20)}
+                      fill="none"
+                      stroke={trendColor}
+                      strokeWidth={1.5}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity={0.85}
+                    />
+                  </svg>
+                )}
+                <Link
+                  href={isSelf ? "/badges" : `/badges/${entry.userId}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors hover:border-accent/50 hover:text-foreground ${
+                    badgeCountChanged
+                      ? "animate-badge-count-pulse border-accent text-foreground"
+                      : "border-border text-muted"
+                  }`}
+                  title={badgeCountChanged ? "New badges since your last visit!" : "View badges"}
+                >
+                  <UtensilsMedalIcon className="h-3.5 w-3.5" />
+                  {entry.badgeCount}
+                </Link>
+              </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-5 lg:items-center lg:gap-4">
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted">Start</div>
-                <div className="mt-1 text-muted">
-                  {masked ? "🔒 Hidden" : formatWeight(entry.startWeight, entry.unit)}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted">Current</div>
-                <div className="mt-1 text-muted">
-                  {masked ? "🔒 Hidden" : formatWeight(entry.currentWeight, entry.unit)}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] uppercase tracking-wide text-muted">Change</div>
-                <div className={`mt-1 font-mono font-medium ${changeColor}`}>
-                  {formatPercent(change)}
-                </div>
-              </div>
-              <div>
-                <div
-                  className="text-[10px] uppercase tracking-wide text-muted"
-                  title="Progress toward your own weight-loss goal"
-                >
-                  Goal
-                </div>
-                <div className="mt-1.5">
-                  <GoalRing progress={entry.goalProgressPercent} />
-                </div>
-              </div>
-              <div>
-                <div
-                  className="text-[10px] uppercase tracking-wide text-muted"
-                  title="Extrapolated from each person's own daily pace to the end of the competition"
-                >
-                  Projected
-                </div>
-                <div className="mt-1 font-mono italic text-muted">
-                  {formatPercent(entry.predictedFinalPercent)}
-                </div>
-                {!masked && (
-                  <div className="font-mono text-xs text-muted/70">
-                    {formatWeight(entry.predictedFinalWeight, entry.unit)}
+            <div className="mt-4 border-t border-border/60 pl-2 pt-4">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:grid-cols-5 lg:items-center lg:gap-4">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted">Start</div>
+                  <div className="mt-1 font-mono text-muted">
+                    {masked ? "🔒 Hidden" : formatWeight(entry.startWeight, entry.unit)}
                   </div>
-                )}
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted">Current</div>
+                  <div className="mt-1 font-mono text-foreground">
+                    {masked ? "🔒 Hidden" : formatWeight(entry.currentWeight, entry.unit)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted">Change</div>
+                  <div
+                    className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono font-medium ${changeColor} ${
+                      change === null ? "" : isGoodChange ? "bg-accent/10" : "bg-danger/10"
+                    }`}
+                  >
+                    {change !== null && (
+                      <span className="text-[9px]">{isGoodChange ? "▼" : "▲"}</span>
+                    )}
+                    {formatPercent(change)}
+                  </div>
+                </div>
+                <div>
+                  <div
+                    className="text-[10px] uppercase tracking-wide text-muted"
+                    title="Progress toward your own weight-loss goal"
+                  >
+                    Goal
+                  </div>
+                  <div className="mt-1.5">
+                    <GoalRing progress={entry.goalProgressPercent} />
+                  </div>
+                </div>
+                <div>
+                  <div
+                    className="text-[10px] uppercase tracking-wide text-muted"
+                    title="Extrapolated from each person's own daily pace to the end of the competition"
+                  >
+                    Projected
+                  </div>
+                  <div className="mt-1 font-mono italic text-muted">
+                    {formatPercent(entry.predictedFinalPercent)}
+                  </div>
+                  {!masked && (
+                    <div className="font-mono text-xs text-muted/70">
+                      {formatWeight(entry.predictedFinalWeight, entry.unit)}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

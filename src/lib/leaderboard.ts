@@ -32,6 +32,8 @@ export type LeaderboardEntry = {
   goalPercent: number | null;
   /** 0-100, how far toward goalPercent this user's actual loss is so far. Null if no goal set. */
   goalProgressPercent: number | null;
+  /** Recent % change history (oldest to newest), for a small trend sparkline. */
+  sparkline: number[];
 };
 
 export type ChartRow = {
@@ -172,6 +174,7 @@ export async function getLeaderboardData() {
       badgeCount: badgeCountByUser.get(user.id) ?? 0,
       goalPercent: user.goalPercent,
       goalProgressPercent,
+      sparkline: series ? series.slice(-14).map((p) => p.percentChange) : [],
     };
   });
 
