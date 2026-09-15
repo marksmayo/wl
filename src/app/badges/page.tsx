@@ -5,6 +5,7 @@ import { BadgeGallery } from "@/components/BadgeGallery";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
+import { getTrophyCaseStats } from "@/lib/badges/trophyCase";
 
 export default async function BadgesPage() {
   const user = await getCurrentUser();
@@ -17,10 +18,14 @@ export default async function BadgesPage() {
     markViewedOwnBadges: true,
   });
 
-  const earnedBadges = await prisma.userBadge.findMany({
-    where: { userId: user.id },
-    select: { badgeId: true, earnedAt: true },
-  });
+  const [earnedBadges, { entries: rarity }] = await Promise.all([
+    prisma.userBadge.findMany({
+      where: { userId: user.id },
+      select: { badgeId: true, earnedAt: true },
+    }),
+    getTrophyCaseStats(),
+  ]);
+  const rarityByBadgeId = new Map(rarity.map((r) => [r.id, r.percent]));
 
   return (
     <main className="mx-auto w-full max-w-4xl flex-1 px-6 py-12">
@@ -34,7 +39,7 @@ export default async function BadgesPage() {
 
       <AnimatedIn delay={0.1} className="mt-8">
         <div className="glass rounded-2xl p-6">
-          <BadgeGallery earned={earnedBadges} />
+          <BadgeGallery earned={earnedBadges} rarityByBadgeId={rarityByBadgeId} />
         </div>
       </AnimatedIn>
     </main>

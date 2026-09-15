@@ -7,23 +7,7 @@ import type { LeaderboardEntry } from "@/lib/leaderboard";
 import { formatPercent, formatWeight } from "@/lib/format";
 import { UtensilsMedalIcon } from "@/lib/badges/icons";
 import { GoalRing } from "@/components/GoalRing";
-
-const MEDALS = ["🥇", "🥈", "🥉"];
-
-const RANK_BADGE_STYLE = [
-  {
-    gradient: "from-yellow-300 to-amber-600",
-    glow: "shadow-[0_0_14px_-3px_rgba(250,204,21,0.75)]",
-  },
-  {
-    gradient: "from-slate-200 to-slate-400",
-    glow: "shadow-[0_0_14px_-3px_rgba(203,213,225,0.6)]",
-  },
-  {
-    gradient: "from-orange-300 to-amber-700",
-    glow: "shadow-[0_0_14px_-3px_rgba(217,119,6,0.6)]",
-  },
-];
+import { RankMedal } from "@/components/RankMedal";
 
 // Small hand-rolled trend line (no charting library needed for 14 points) —
 // normalized to its own min/max so a flat-ish week still shows visible shape.
@@ -113,7 +97,6 @@ export function RankingsList({
         const isGoodChange = change !== null && change <= 0;
         const changeColor =
           change === null ? "text-muted" : isGoodChange ? "text-accent" : "text-danger";
-        const rankBadge = entry.rank && entry.rank <= 3 ? RANK_BADGE_STYLE[entry.rank - 1] : null;
         const trendColor =
           entry.sparkline.length >= 2 &&
           entry.sparkline[entry.sparkline.length - 1] <= entry.sparkline[0]
@@ -138,18 +121,7 @@ export function RankingsList({
 
             <div className="flex items-center justify-between gap-2 pl-2 sm:gap-3">
               <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-                {rankBadge ? (
-                  <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br text-sm sm:h-9 sm:w-9 sm:text-base ${rankBadge.gradient} ${rankBadge.glow}`}
-                    title={`Rank #${entry.rank}`}
-                  >
-                    {MEDALS[entry.rank! - 1]}
-                  </span>
-                ) : (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-mono text-xs text-muted sm:h-9 sm:w-9">
-                    {entry.rank ? `#${entry.rank}` : "—"}
-                  </span>
-                )}
+                <RankMedal rank={entry.rank} />
                 <span className="min-w-0 truncate text-[15px] font-medium text-foreground">
                   {entry.fullName}
                 </span>

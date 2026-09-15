@@ -26,6 +26,8 @@ export type BadgeDefinition = {
   name: string;
   description: string;
   icon: ComponentType<{ className?: string }>;
+  /** Tier/rank tint (hex), when this badge belongs to an escalating series. Undefined for one-off badges. */
+  color?: string;
 };
 
 const SIGNIN_STREAK_TIERS = [
@@ -128,54 +130,63 @@ export const BADGES: BadgeDefinition[] = [
     name: tier.name,
     description: `Visited ${tier.days} days in a row.`,
     icon: tieredIcon(FlameIcon, TIER_COLORS[i]),
+    color: TIER_COLORS[i],
   })),
   ...WEIGHIN_COUNT_TIERS.map((tier, i) => ({
     id: weighinCountId(tier.days),
     name: tier.name,
     description: `Logged your weight on ${tier.days} different days.`,
     icon: tieredIcon(ChefHatIcon, TIER_COLORS[i]),
+    color: TIER_COLORS[i],
   })),
   ...WEIGHIN_STREAK_TIERS.map((tier, i) => ({
     id: weighinStreakId(tier.days),
     name: tier.name,
     description: `Logged your weight ${tier.days} days in a row.`,
     icon: tieredIcon(UtensilsIcon, TIER_COLORS[i]),
+    color: TIER_COLORS[i],
   })),
   ...PERCENT_TIERS.map((tier, i) => ({
     id: percentId(tier.pct),
     name: tier.name,
     description: `Dropped ${tier.pct}% or more since your first weigh-in.`,
     icon: tieredIcon(DripIcon, TIER_COLORS[i]),
+    color: TIER_COLORS[i],
   })),
   {
     id: rankId(1),
     name: "Golden Fork",
     description: "Reached #1 on the leaderboard.",
     icon: tieredIcon(UtensilsMedalIcon, RANK_COLORS[1]),
+    color: RANK_COLORS[1],
   },
   {
     id: rankId(2),
     name: "Silver Spoon",
     description: "Reached #2 on the leaderboard.",
     icon: tieredIcon(UtensilsMedalIcon, RANK_COLORS[2]),
+    color: RANK_COLORS[2],
   },
   {
     id: rankId(3),
     name: "Bronze Ladle",
     description: "Reached #3 on the leaderboard.",
     icon: tieredIcon(UtensilsMedalIcon, RANK_COLORS[3]),
+    color: RANK_COLORS[3],
   },
   ...EXTRA_RANK_TIERS.map((tier, i) => ({
     id: rankId(tier.rank),
     name: tier.name,
     description: `Reached #${tier.rank} on the leaderboard.`,
     icon: tieredIcon(UtensilsMedalIcon, TIER_COLORS[i]),
+    color: TIER_COLORS[i],
   })),
   {
     id: "oopsie",
     name: "Cheat Day",
     description: "Logged a weight higher than your previous entry. It happens!",
     icon: tieredIcon(PizzaSliceIcon, "#ff6b6b"),
+    color: "#ff6b6b",
   },
   {
     id: "device-desktop",

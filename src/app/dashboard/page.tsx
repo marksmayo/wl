@@ -16,6 +16,7 @@ import { WeighInForm } from "@/components/WeighInForm";
 import { WeightChart } from "@/components/WeightChart";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { CountUp } from "@/components/CountUp";
+import { RankMedal } from "@/components/RankMedal";
 import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
@@ -107,33 +108,56 @@ export default async function DashboardPage() {
       </AnimatedIn>
 
       <AnimatedStagger className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4" itemSelector=".tile">
-        <div className="tile glass rounded-2xl p-5">
-          <div className="text-xs uppercase tracking-wide text-muted">Starting weight</div>
-          <div className="mt-2 text-2xl font-semibold">
+        <div className="tile glass relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+          <span className="absolute inset-y-0 left-0 w-1 rounded-l-2xl bg-muted/40" aria-hidden="true" />
+          <div className="pl-2 text-xs uppercase tracking-wide text-muted">Starting weight</div>
+          <div className="mt-2 pl-2 text-2xl font-semibold">
             {first ? <CountUp value={first.weight} decimals={2} suffix={` ${user.unit}`} /> : "—"}
           </div>
         </div>
-        <div className="tile glass rounded-2xl p-5">
-          <div className="text-xs uppercase tracking-wide text-muted">Current weight</div>
-          <div className="mt-2 text-2xl font-semibold">
+        <div className="tile glass relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+          <span className="absolute inset-y-0 left-0 w-1 rounded-l-2xl bg-accent-2" aria-hidden="true" />
+          <div className="pl-2 text-xs uppercase tracking-wide text-muted">Current weight</div>
+          <div className="mt-2 pl-2 text-2xl font-semibold">
             {latest ? <CountUp value={latest.weight} decimals={2} suffix={` ${user.unit}`} /> : "—"}
           </div>
         </div>
-        <div className="tile glass rounded-2xl p-5">
-          <div className="text-xs uppercase tracking-wide text-muted">Change</div>
+        <div className="tile glass relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+          <span
+            className={`absolute inset-y-0 left-0 w-1 rounded-l-2xl ${
+              percentChange !== null && percentChange <= 0 ? "bg-accent" : "bg-danger"
+            }`}
+            aria-hidden="true"
+          />
+          <div className="pl-2 text-xs uppercase tracking-wide text-muted">Change</div>
           <div
-            className={`mt-2 text-2xl font-semibold ${
+            className={`mt-2 flex items-baseline gap-1 pl-2 text-2xl font-semibold ${
               percentChange !== null && percentChange <= 0 ? "text-accent" : "text-danger"
             }`}
           >
+            {percentChange !== null && (
+              <span className="text-sm">{percentChange <= 0 ? "▼" : "▲"}</span>
+            )}
             {formatPercent(percentChange)}
           </div>
         </div>
-        <div className="tile glass rounded-2xl p-5">
-          <div className="text-xs uppercase tracking-wide text-muted">Your rank</div>
-          <div className="mt-2 text-2xl font-semibold">
-            {myEntry?.rank ? `#${myEntry.rank}` : "—"}
-            <span className="ml-1 text-sm font-normal text-muted">/ {entries.length}</span>
+        <div className="tile glass relative overflow-hidden rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20">
+          <span
+            className={`absolute inset-y-0 left-0 w-1 rounded-l-2xl ${
+              myEntry?.rank === 1
+                ? "bg-[#ffd700]"
+                : myEntry?.rank === 2
+                ? "bg-[#c0c0c0]"
+                : myEntry?.rank === 3
+                ? "bg-[#cd7f32]"
+                : "bg-muted/40"
+            }`}
+            aria-hidden="true"
+          />
+          <div className="pl-2 text-xs uppercase tracking-wide text-muted">Your rank</div>
+          <div className="mt-2 flex items-center gap-2 pl-2">
+            <RankMedal rank={myEntry?.rank ?? null} />
+            <span className="text-sm text-muted">/ {entries.length}</span>
           </div>
         </div>
       </AnimatedStagger>
