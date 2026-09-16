@@ -16,16 +16,22 @@ const RANK_BADGE_STYLE = [
 ];
 
 const BOX_CLASSES = {
-  sm: "h-8 w-8 sm:h-9 sm:w-9",
-  lg: "h-12 w-12",
+  // Mobile stays 32px (tight quarters in the leaderboard card header,
+  // tuned to avoid crowding out long names) but gets noticeably more
+  // room from `sm:` up, where there's space to spare.
+  sm: "h-8 w-8 sm:h-10 sm:w-10",
+  lg: "h-14 w-14",
 };
 const MEDAL_TEXT_CLASSES = {
-  sm: "text-sm sm:text-base",
-  lg: "text-2xl",
+  sm: "text-base sm:text-xl",
+  lg: "text-3xl",
 };
 const NUMBER_TEXT_CLASSES = {
-  sm: "text-xs",
-  lg: "text-base",
+  // Bumped up from text-xs — the plain "#N" rank number was reported hard
+  // to read; this is the biggest bump that still fits a 3-digit rank in
+  // the unchanged 32px mobile circle.
+  sm: "text-sm sm:text-lg",
+  lg: "text-lg",
 };
 
 /**
@@ -46,7 +52,11 @@ export function RankMedal({
   if (style) {
     return (
       <span
-        className={`flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${boxClass} ${MEDAL_TEXT_CLASSES[size]} ${style.gradient} ${style.glow}`}
+        // overflow-hidden resets this flex item's automatic min-width from
+        // "content size" to 0 (per the flexbox spec), so the explicit
+        // h-*/w-* actually caps it instead of the bigger text quietly
+        // widening it and stealing space from the name next to it.
+        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br ${boxClass} ${MEDAL_TEXT_CLASSES[size]} ${style.gradient} ${style.glow}`}
         title={`Rank #${rank}`}
       >
         {MEDALS[rank! - 1]}
@@ -56,7 +66,7 @@ export function RankMedal({
 
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 font-mono text-muted ${boxClass} ${NUMBER_TEXT_CLASSES[size]}`}
+      className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-surface-2 font-mono text-muted ${boxClass} ${NUMBER_TEXT_CLASSES[size]}`}
     >
       {rank ? `#${rank}` : "—"}
     </span>
