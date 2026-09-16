@@ -1,5 +1,3 @@
-const MEDALS = ["🥇", "🥈", "🥉"];
-
 const RANK_BADGE_STYLE = [
   {
     gradient: "from-yellow-300 to-amber-600",
@@ -23,8 +21,11 @@ const BOX_CLASSES = {
   lg: "h-14 w-14",
 };
 const MEDAL_TEXT_CLASSES = {
-  sm: "text-base sm:text-xl",
-  lg: "text-3xl",
+  // A plain bold digit, not the medal emoji's own tiny embedded numeral
+  // (reported unreadable) — sized well past the "#N" style below since
+  // there's no emoji glyph padding eating into the available space.
+  sm: "text-lg sm:text-2xl",
+  lg: "text-4xl",
 };
 const NUMBER_TEXT_CLASSES = {
   // Bumped up from text-xs — the plain "#N" rank number was reported hard
@@ -56,10 +57,10 @@ export function RankMedal({
         // "content size" to 0 (per the flexbox spec), so the explicit
         // h-*/w-* actually caps it instead of the bigger text quietly
         // widening it and stealing space from the name next to it.
-        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br ${boxClass} ${MEDAL_TEXT_CLASSES[size]} ${style.gradient} ${style.glow}`}
+        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br font-black text-background ${boxClass} ${MEDAL_TEXT_CLASSES[size]} ${style.gradient} ${style.glow}`}
         title={`Rank #${rank}`}
       >
-        {MEDALS[rank! - 1]}
+        {rank}
       </span>
     );
   }
