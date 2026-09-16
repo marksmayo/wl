@@ -17,7 +17,6 @@ const METALLIC_GRADIENT =
 
 function shouldPlayIntro(): boolean {
   if (typeof window === "undefined") return false;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
   try {
     return window.localStorage.getItem(STORAGE_KEY) !== localDateKey();
   } catch {
@@ -44,7 +43,7 @@ function markIntroShown() {
 export function HeroIntro() {
   // Always false on both the server render and the client's initial
   // (hydrating) render — so there's no hydration mismatch — then flipped
-  // client-side once we've checked localStorage/reduced-motion.
+  // client-side once we've checked localStorage.
   const [active, setActive] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const emberRef = useRef<HTMLDivElement>(null);
