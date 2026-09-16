@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { NavBar } from "@/components/NavBar";
 import { BadgeToastHost } from "@/components/BadgeToastHost";
 import { ConfettiBurst } from "@/components/ConfettiBurst";
+import { SwipeNav } from "@/components/SwipeNav";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <ConfettiBurst />
         <BadgeToastHost />
+        <SwipeNav />
       </body>
     </html>
   );

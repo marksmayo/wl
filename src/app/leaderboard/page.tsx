@@ -50,7 +50,7 @@ export default async function LeaderboardPage() {
   );
 
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+    <main id="page-content" className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
       <BadgeAnnouncer badgeIds={newBadges.map((b) => b.id)} />
       <AnimatedIn>
         <div>
