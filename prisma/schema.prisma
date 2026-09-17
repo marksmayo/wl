@@ -22,6 +22,11 @@ model User {
   // weigh-in, and stays the source of truth from then on.
   goalPercent  Float?
   goalWeight   Float?
+  // In the user's own linear unit — cm when unit="kg", inches when
+  // unit="lbs" — converted alongside weight/goalWeight on a unit switch.
+  // Null means not set (no BMI can be shown until it is).
+  height       Float?
+  hideBMI      Boolean      @default(false)
   createdAt    DateTime     @default(now())
   weighIns     WeighIn[]
   badges       UserBadge[]

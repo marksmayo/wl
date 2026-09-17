@@ -3,6 +3,7 @@ import { EditNameForm } from "@/components/EditNameForm";
 import { EditUnitForm } from "@/components/EditUnitForm";
 import { EditPrivacyForm } from "@/components/EditPrivacyForm";
 import { EditGoalForm } from "@/components/EditGoalForm";
+import { EditHeightForm } from "@/components/EditHeightForm";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
@@ -43,9 +44,16 @@ export default async function SettingsPage() {
         </div>
 
         <div className="settings-card glass rounded-2xl p-6">
+          <h2 className="text-lg font-semibold">Height</h2>
+          <div className="mt-4">
+            <EditHeightForm currentHeight={user.height} unit={user.unit} />
+          </div>
+        </div>
+
+        <div className="settings-card glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Privacy</h2>
           <div className="mt-4">
-            <EditPrivacyForm hideWeight={user.hideWeight} />
+            <EditPrivacyForm hideWeight={user.hideWeight} hideBMI={user.hideBMI} />
           </div>
         </div>
 

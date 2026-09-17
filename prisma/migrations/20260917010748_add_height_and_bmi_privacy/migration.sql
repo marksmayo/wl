@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "height" DOUBLE PRECISION,
+ADD COLUMN     "hideBMI" BOOLEAN NOT NULL DEFAULT false;

@@ -3,7 +3,13 @@
 import { useActionState } from "react";
 import { updatePrivacyAction, type UpdatePrivacyFormState } from "@/app/actions/profile";
 
-export function EditPrivacyForm({ hideWeight }: { hideWeight: boolean }) {
+export function EditPrivacyForm({
+  hideWeight,
+  hideBMI,
+}: {
+  hideWeight: boolean;
+  hideBMI: boolean;
+}) {
   const [state, action, pending] = useActionState<UpdatePrivacyFormState, FormData>(
     updatePrivacyAction,
     undefined
@@ -22,6 +28,21 @@ export function EditPrivacyForm({ hideWeight }: { hideWeight: boolean }) {
           Hide my weight from others
           <span className="block text-xs text-muted">
             Only your % change shows on the leaderboard — your actual weight stays private.
+          </span>
+        </span>
+      </label>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface-2 px-4 py-3 text-sm transition-colors has-[:checked]:border-accent has-[:checked]:bg-accent/10">
+        <input
+          type="checkbox"
+          name="hideBMI"
+          defaultChecked={hideBMI}
+          className="mt-0.5 accent-[var(--accent)]"
+        />
+        <span>
+          Hide my BMI from others
+          <span className="block text-xs text-muted">
+            You&apos;ll still see your own BMI — it just won&apos;t show on the leaderboard for anyone else.
           </span>
         </span>
       </label>

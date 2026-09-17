@@ -7,6 +7,7 @@ import { createSession } from "@/lib/session";
 import { verifySession } from "@/lib/dal";
 import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
 import { buildAfterWeighInContext } from "@/lib/badges/weighinContext";
+import { LBS_PER_KG, CM_PER_INCH } from "@/lib/units";
 
 export type UpdateNameFormState = {
   error?: string;
@@ -61,8 +62,6 @@ const UpdateUnitSchema = z.object({
   unit: z.enum(["lbs", "kg"]),
 });
 
-const LBS_PER_KG = 2.2046226218;
-
 export async function updateUnitAction(
   _prevState: UpdateUnitFormState,
   formData: FormData
@@ -90,9 +89,15 @@ export async function updateUnitAction(
   // raw value in the old unit, kept only so Settings can redisplay it.
   const goalWeight = user.goalWeight == null ? null : Math.round(user.goalWeight * factor * 100) / 100;
 
+  // Height follows the same "cm pairs with kg, inches pair with lbs"
+  // convention as weight, but converts by the cm<->inch factor, not the
+  // mass one above.
+  const heightFactor = nextUnit === "kg" ? CM_PER_INCH : 1 / CM_PER_INCH;
+  const height = user.height == null ? null : Math.round(user.height * heightFactor * 10) / 10;
+
   await prisma.$transaction([
     prisma.$executeRaw`UPDATE "WeighIn" SET weight = ROUND((weight * ${factor})::numeric, 2)::float8 WHERE "userId" = ${session.userId}`,
-    prisma.user.update({ where: { id: session.userId }, data: { unit: nextUnit, goalWeight } }),
+    prisma.user.update({ where: { id: session.userId }, data: { unit: nextUnit, goalWeight, height } }),
   ]);
 
   revalidatePath("/", "layout");
@@ -110,13 +115,59 @@ export async function updatePrivacyAction(
 ): Promise<UpdatePrivacyFormState> {
   const session = await verifySession();
   const hideWeight = formData.get("hideWeight") === "on";
+  const hideBMI = formData.get("hideBMI") === "on";
 
   await prisma.user.update({
     where: { id: session.userId },
-    data: { hideWeight },
+    data: { hideWeight, hideBMI },
   });
 
   revalidatePath("/leaderboard");
+
+  return { success: true };
+}
+
+export type UpdateHeightFormState = {
+  error?: string;
+  success?: boolean;
+} | undefined;
+
+const HeightValueSchema = z.coerce
+  .number({ error: "Enter a valid number." })
+  .positive("Height must be greater than 0.");
+
+export async function updateHeightAction(
+  _prevState: UpdateHeightFormState,
+  formData: FormData
+): Promise<UpdateHeightFormState> {
+  const session = await verifySession();
+  const raw = formData.get("height");
+  const rawStr = typeof raw === "string" ? raw.trim() : "";
+
+  if (rawStr === "") {
+    await prisma.user.update({ where: { id: session.userId }, data: { height: null } });
+    revalidatePath("/leaderboard");
+    revalidatePath("/dashboard");
+    return { success: true };
+  }
+
+  const parsed = HeightValueSchema.safeParse(rawStr);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: session.userId },
+    select: { unit: true },
+  });
+  const bounds = user.unit === "kg" ? { min: 50, max: 250, label: "cm" } : { min: 20, max: 100, label: "in" };
+  if (parsed.data < bounds.min || parsed.data > bounds.max) {
+    return { error: `That doesn't look like a valid height in ${bounds.label}.` };
+  }
+
+  await prisma.user.update({ where: { id: session.userId }, data: { height: parsed.data } });
+  revalidatePath("/leaderboard");
+  revalidatePath("/dashboard");
 
   return { success: true };
 }

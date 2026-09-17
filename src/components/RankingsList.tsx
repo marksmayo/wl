@@ -4,7 +4,8 @@ import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { gsap } from "gsap";
 import type { LeaderboardEntry } from "@/lib/leaderboard";
-import { formatPercent, formatWeight } from "@/lib/format";
+import { PROJECTION_MODELS } from "@/lib/projections";
+import { formatPercent, formatWeight, formatBMI } from "@/lib/format";
 import { UtensilsMedalIcon } from "@/lib/badges/icons";
 import { GoalRing } from "@/components/GoalRing";
 import { RankMedal } from "@/components/RankMedal";
@@ -224,22 +225,64 @@ export function RankingsList({
                       <GoalRing progress={entry.goalProgressPercent} />
                     )}
                   </div>
-                </div>
-                <div>
-                  <div
-                    className="text-[10px] uppercase tracking-wide text-muted"
-                    title="Extrapolated from each person's own daily pace to the end of the competition"
-                  >
-                    Projected
-                  </div>
-                  <div className="mt-1 font-mono italic text-muted">
-                    {formatPercent(entry.predictedFinalPercent)}
-                  </div>
-                  {!masked && (
-                    <div className="font-mono text-xs text-muted/70">
-                      {formatWeight(entry.predictedFinalWeight, entry.unit)}
+                  {!masked && entry.goalTargetWeight !== null && (
+                    <div className="mt-1 font-mono text-[10px] text-muted/70">
+                      {formatWeight(entry.goalTargetWeight, entry.unit)}
                     </div>
                   )}
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted">BMI</div>
+                  <div className="mt-1 font-mono text-muted">
+                    {isSelf && entry.bmi === null ? (
+                      <Link
+                        href="/settings"
+                        className="text-accent underline decoration-dotted underline-offset-2 hover:text-foreground"
+                        title="Set your height to see your BMI"
+                      >
+                        Add height
+                      </Link>
+                    ) : entry.hideBMI && !isSelf ? (
+                      "🔒 Hidden"
+                    ) : (
+                      formatBMI(entry.bmi)
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 border-t border-border/40 pt-3">
+                <div
+                  className="text-[10px] uppercase tracking-wide text-muted"
+                  title="Three ways of extrapolating each person's own pace to the end of the competition"
+                >
+                  Projected final change
+                </div>
+                <div className="mt-2 flex flex-wrap gap-x-8 gap-y-3">
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wide text-muted/70" title={PROJECTION_MODELS[0].description}>
+                      {PROJECTION_MODELS[0].label}
+                    </div>
+                    <div className="mt-0.5 font-mono italic text-muted">
+                      {formatPercent(entry.projectedStraightLinePercent)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wide text-muted/70" title={PROJECTION_MODELS[1].description}>
+                      {PROJECTION_MODELS[1].label}
+                    </div>
+                    <div className="mt-0.5 font-mono italic text-muted">
+                      {formatPercent(entry.projectedLastWeekPercent)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] uppercase tracking-wide text-muted/70" title={PROJECTION_MODELS[2].description}>
+                      {PROJECTION_MODELS[2].label}
+                    </div>
+                    <div className="mt-0.5 font-mono italic text-muted">
+                      {formatPercent(entry.projectedLastMonthPercent)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

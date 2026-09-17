@@ -14,6 +14,7 @@ import {
 import { formatPercent, formatWeight } from "@/lib/format";
 import { WeighInForm } from "@/components/WeighInForm";
 import { WeightChart } from "@/components/WeightChart";
+import { ProjectionChart } from "@/components/ProjectionChart";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { CountUp } from "@/components/CountUp";
 import { RankMedal } from "@/components/RankMedal";
@@ -55,6 +56,12 @@ export default async function DashboardPage() {
     first && latest ? ((latest.weight - first.weight) / first.weight) * 100 : null;
 
   const myEntry = entries.find((e) => e.userId === user.id);
+  const myPercentSeries = first
+    ? myWeighIns.map((w) => ({
+        dateKey: w.date.toISOString().slice(0, 10),
+        percentChange: ((w.weight - first.weight) / first.weight) * 100,
+      }))
+    : [];
   const colorMap = buildColorMap(participants.map((p) => p.id));
   const status = competitionStatus();
   const fallbackDays = status === "active" ? daysRemaining() : 0;
@@ -201,6 +208,29 @@ export default async function DashboardPage() {
           </div>
         </AnimatedIn>
       </div>
+
+      {myPercentSeries.length > 0 && myEntry && (
+        <AnimatedIn delay={0.18} className="mt-6">
+          <div className="glass rounded-2xl p-6">
+            <h2 className="text-lg font-semibold">Projected outcome</h2>
+            <p className="mt-1 text-sm text-muted">
+              Three ways of extrapolating your own pace to the end of the competition — the dashed
+              lines pick up where your actual progress (solid) leaves off.
+            </p>
+            <div className="mt-4">
+              <ProjectionChart
+                series={myPercentSeries}
+                projections={{
+                  straightLine: myEntry.projectedStraightLinePercent,
+                  lastWeek: myEntry.projectedLastWeekPercent,
+                  lastMonth: myEntry.projectedLastMonthPercent,
+                }}
+                endDateKey={COMPETITION_END}
+              />
+            </div>
+          </div>
+        </AnimatedIn>
+      )}
 
       {myWeighIns.length > 0 && (
         <AnimatedIn delay={0.2} className="mt-6">

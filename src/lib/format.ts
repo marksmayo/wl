@@ -9,6 +9,17 @@ export function formatWeight(value: number | null, unit: string): string {
   return `${value.toFixed(2)} ${unit}`;
 }
 
+export function formatHeight(value: number | null, unit: string): string {
+  if (value === null || Number.isNaN(value)) return "—";
+  const label = unit === "kg" ? "cm" : "in";
+  return `${value.toFixed(unit === "kg" ? 0 : 1)} ${label}`;
+}
+
+export function formatBMI(value: number | null): string {
+  if (value === null || Number.isNaN(value)) return "—";
+  return value.toFixed(1);
+}
+
 export function initials(fullName: string): string {
   return fullName
     .split(" ")

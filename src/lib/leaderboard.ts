@@ -9,6 +9,7 @@ import {
   computeMissingList,
   computeWeighedInList,
 } from "@/lib/competition";
+import { LBS_PER_KG, CM_PER_INCH } from "@/lib/units";
 
 export type UserSeriesPoint = {
   dateKey: string;
@@ -24,14 +25,22 @@ export type LeaderboardEntry = {
   startWeight: number | null;
   currentWeight: number | null;
   percentChange: number | null;
-  predictedFinalPercent: number | null;
-  predictedFinalWeight: number | null;
+  /** Straight-line-since-start, last-7-days, and last-30-days projections to competition end — see PROJECTION_MODELS. */
+  projectedStraightLinePercent: number | null;
+  projectedStraightLineWeight: number | null;
+  projectedLastWeekPercent: number | null;
+  projectedLastMonthPercent: number | null;
   entryCount: number;
   rank: number | null;
   badgeCount: number;
   goalPercent: number | null;
   /** 0-100, how far toward goalPercent this user's actual loss is so far. Null if no goal set. */
   goalProgressPercent: number | null;
+  /** Derived from goalPercent + startWeight, regardless of whether the goal was originally entered as a % or a weight. Null if no goal or no first weigh-in yet. */
+  goalTargetWeight: number | null;
+  /** Null if no height on file yet. */
+  bmi: number | null;
+  hideBMI: boolean;
   /** Recent % change history (oldest to newest), for a small trend sparkline. */
   sparkline: number[];
 };
@@ -44,6 +53,38 @@ export type ChartRow = {
 
 function dateToKey(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+function dateKeyMs(dateKey: string): number {
+  return new Date(`${dateKey}T00:00:00.000Z`).getTime();
+}
+
+export function computeBMI(weight: number, height: number, unit: string): number {
+  const weightKg = unit === "kg" ? weight : weight / LBS_PER_KG;
+  const heightCm = unit === "kg" ? height : height * CM_PER_INCH;
+  const heightM = heightCm / 100;
+  return weightKg / (heightM * heightM);
+}
+
+// Average daily rate of change over just the trailing `windowDays` of a
+// user's own history (not the whole competition), extrapolated to the
+// competition end from wherever they are today — a "recent pace" read that
+// reacts much faster than the since-the-start average.
+function projectFromRecentWindow(series: UserSeriesPoint[], windowDays: number): number | null {
+  if (series.length < 2) return null;
+  const latest = series[series.length - 1];
+  const latestMs = dateKeyMs(latest.dateKey);
+  const cutoffMs = latestMs - windowDays * 86_400_000;
+  const windowPoints = series.filter((p) => dateKeyMs(p.dateKey) >= cutoffMs);
+  const baseline = windowPoints[0];
+  if (!baseline || baseline === latest) return null;
+
+  const daysElapsed = (latestMs - dateKeyMs(baseline.dateKey)) / 86_400_000;
+  if (daysElapsed <= 0) return null;
+
+  const rate = (latest.percentChange - baseline.percentChange) / daysElapsed;
+  const daysToEnd = (COMPETITION_END_DATE.getTime() - latestMs) / 86_400_000;
+  return latest.percentChange + rate * daysToEnd;
 }
 
 /**
@@ -60,6 +101,8 @@ export async function getLeaderboardData() {
       unit: true,
       hideWeight: true,
       goalPercent: true,
+      height: true,
+      hideBMI: true,
       weighIns: {
         where: {
           date: {
@@ -132,24 +175,29 @@ export async function getLeaderboardData() {
     const first = series?.[0];
     const last = series?.[series.length - 1];
 
-    // Extrapolate each person's own daily rate of change (first entry to
-    // latest) across the full span to competition end — a rough "if this
-    // pace holds" projection, not a re-ranking signal.
-    let predictedFinalPercent: number | null = null;
-    let predictedFinalWeight: number | null = null;
+    // Model 1: extrapolate each person's own daily rate of change (first
+    // entry to latest) across the full span to competition end — a rough
+    // "if this pace holds" projection, not a re-ranking signal.
+    let projectedStraightLinePercent: number | null = null;
+    let projectedStraightLineWeight: number | null = null;
     if (first && last && series && series.length >= 2) {
-      const firstMs = new Date(`${first.dateKey}T00:00:00.000Z`).getTime();
-      const lastMs = new Date(`${last.dateKey}T00:00:00.000Z`).getTime();
+      const firstMs = dateKeyMs(first.dateKey);
+      const lastMs = dateKeyMs(last.dateKey);
       const daysElapsed = (lastMs - firstMs) / 86_400_000;
       if (daysElapsed > 0) {
         const dailyRate = last.percentChange / daysElapsed;
         const daysFirstToEnd = (COMPETITION_END_DATE.getTime() - firstMs) / 86_400_000;
-        predictedFinalPercent = dailyRate * daysFirstToEnd;
+        projectedStraightLinePercent = dailyRate * daysFirstToEnd;
         // Derived from the same % projection (not a separate calculation)
         // so the two numbers always agree with each other.
-        predictedFinalWeight = first.weight * (1 + predictedFinalPercent / 100);
+        projectedStraightLineWeight = first.weight * (1 + projectedStraightLinePercent / 100);
       }
     }
+
+    // Models 2 & 3: recent-pace projections, reacting only to the last
+    // week/month of history instead of the whole competition average.
+    const projectedLastWeekPercent = series ? projectFromRecentWindow(series, 7) : null;
+    const projectedLastMonthPercent = series ? projectFromRecentWindow(series, 30) : null;
 
     // Progress toward their own goal, not the raw loss % — e.g. someone who
     // set a 10% goal and has lost 6% so far is 60% of the way there.
@@ -159,6 +207,16 @@ export async function getLeaderboardData() {
       goalProgressPercent = Math.min(100, (actualLossPercent / user.goalPercent) * 100);
     }
 
+    // The actual target weight implied by the goal, regardless of whether
+    // it was originally entered as a % or a weight — always derived from
+    // the canonical goalPercent against their real starting weight.
+    const goalTargetWeight =
+      user.goalPercent && user.goalPercent > 0 && first
+        ? first.weight * (1 - user.goalPercent / 100)
+        : null;
+
+    const bmi = user.height && last ? computeBMI(last.weight, user.height, user.unit) : null;
+
     return {
       userId: user.id,
       fullName: user.fullName,
@@ -167,13 +225,18 @@ export async function getLeaderboardData() {
       startWeight: first?.weight ?? null,
       currentWeight: last?.weight ?? null,
       percentChange: last?.percentChange ?? null,
-      predictedFinalPercent,
-      predictedFinalWeight,
+      projectedStraightLinePercent,
+      projectedStraightLineWeight,
+      projectedLastWeekPercent,
+      projectedLastMonthPercent,
       entryCount: series?.length ?? 0,
       rank: null,
       badgeCount: badgeCountByUser.get(user.id) ?? 0,
       goalPercent: user.goalPercent,
       goalProgressPercent,
+      goalTargetWeight,
+      bmi,
+      hideBMI: user.hideBMI,
       sparkline: series ? series.slice(-14).map((p) => p.percentChange) : [],
     };
   });

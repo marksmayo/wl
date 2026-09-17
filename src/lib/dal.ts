@@ -27,6 +27,8 @@ export const getCurrentUser = cache(async () => {
       hideWeight: true,
       goalPercent: true,
       goalWeight: true,
+      height: true,
+      hideBMI: true,
       createdAt: true,
     },
   });
