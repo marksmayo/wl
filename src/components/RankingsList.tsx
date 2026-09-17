@@ -266,6 +266,11 @@ export function RankingsList({
                     <div className="mt-0.5 font-mono italic text-muted">
                       {formatPercent(entry.projectedStraightLinePercent)}
                     </div>
+                    {!masked && entry.projectedStraightLineWeight !== null && (
+                      <div className="font-mono text-[10px] text-muted/70">
+                        {formatWeight(entry.projectedStraightLineWeight, entry.unit)}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="text-[9px] uppercase tracking-wide text-muted/70" title={PROJECTION_MODELS[1].description}>
@@ -274,6 +279,11 @@ export function RankingsList({
                     <div className="mt-0.5 font-mono italic text-muted">
                       {formatPercent(entry.projectedLastWeekPercent)}
                     </div>
+                    {!masked && entry.projectedLastWeekWeight !== null && (
+                      <div className="font-mono text-[10px] text-muted/70">
+                        {formatWeight(entry.projectedLastWeekWeight, entry.unit)}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div className="text-[9px] uppercase tracking-wide text-muted/70" title={PROJECTION_MODELS[2].description}>
@@ -282,6 +292,11 @@ export function RankingsList({
                     <div className="mt-0.5 font-mono italic text-muted">
                       {formatPercent(entry.projectedLastMonthPercent)}
                     </div>
+                    {!masked && entry.projectedLastMonthWeight !== null && (
+                      <div className="font-mono text-[10px] text-muted/70">
+                        {formatWeight(entry.projectedLastMonthWeight, entry.unit)}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

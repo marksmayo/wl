@@ -29,7 +29,9 @@ export type LeaderboardEntry = {
   projectedStraightLinePercent: number | null;
   projectedStraightLineWeight: number | null;
   projectedLastWeekPercent: number | null;
+  projectedLastWeekWeight: number | null;
   projectedLastMonthPercent: number | null;
+  projectedLastMonthWeight: number | null;
   entryCount: number;
   rank: number | null;
   badgeCount: number;
@@ -198,6 +200,17 @@ export async function getLeaderboardData() {
     // week/month of history instead of the whole competition average.
     const projectedLastWeekPercent = series ? projectFromRecentWindow(series, 7) : null;
     const projectedLastMonthPercent = series ? projectFromRecentWindow(series, 30) : null;
+    // Same derive-from-percent approach as the straight-line model above —
+    // every series percentChange is already relative to `first.weight`, so
+    // the weight equivalent always agrees with its percent.
+    const projectedLastWeekWeight =
+      first && projectedLastWeekPercent !== null
+        ? first.weight * (1 + projectedLastWeekPercent / 100)
+        : null;
+    const projectedLastMonthWeight =
+      first && projectedLastMonthPercent !== null
+        ? first.weight * (1 + projectedLastMonthPercent / 100)
+        : null;
 
     // Progress toward their own goal, not the raw loss % — e.g. someone who
     // set a 10% goal and has lost 6% so far is 60% of the way there.
@@ -228,7 +241,9 @@ export async function getLeaderboardData() {
       projectedStraightLinePercent,
       projectedStraightLineWeight,
       projectedLastWeekPercent,
+      projectedLastWeekWeight,
       projectedLastMonthPercent,
+      projectedLastMonthWeight,
       entryCount: series?.length ?? 0,
       rank: null,
       badgeCount: badgeCountByUser.get(user.id) ?? 0,
