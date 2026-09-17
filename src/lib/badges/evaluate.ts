@@ -34,6 +34,8 @@ export type EvaluateOptions = {
   wasLastOfDay?: boolean;
   /** Set right after successfully setting a weight-loss goal. */
   markSetGoal?: boolean;
+  /** Set right after successfully setting a height (BMI can now be calculated). */
+  markSetHeight?: boolean;
   /** This user's currently-set weight-loss goal (%), if any — checked against afterWeighIn's droppedPct. */
   goalPercent?: number | null;
   /** Pass right after a weigh-in is logged to check weigh-in based badges. */
@@ -107,6 +109,7 @@ export async function evaluateAndAwardBadges(
   if (opts.wasFirstOfDay) consider("first-of-day", true);
   if (opts.wasLastOfDay) consider("last-of-day", true);
   if (opts.markSetGoal) consider("goal-set", true);
+  if (opts.markSetHeight) consider("height-set", true);
 
   if (opts.afterWeighIn) {
     const { weighInDates, firstWeight, latestWeight, previousWeight, everGained } =

@@ -17,6 +17,7 @@ import {
   ServiceBellIcon,
   OrderTicketIcon,
   PlateCheckIcon,
+  TapeMeasureIcon,
   TIER_COLORS,
   RANK_COLORS,
 } from "./icons";
@@ -235,6 +236,12 @@ export const BADGES: BadgeDefinition[] = [
     name: "Order Up!",
     description: "Reached your weight-loss goal.",
     icon: PlateCheckIcon,
+  },
+  {
+    id: "height-set",
+    name: "Measured Up",
+    description: "Added your height so your BMI shows on the leaderboard.",
+    icon: TapeMeasureIcon,
   },
 ];
 

@@ -130,6 +130,7 @@ export async function updatePrivacyAction(
 export type UpdateHeightFormState = {
   error?: string;
   success?: boolean;
+  newBadges?: string[];
 } | undefined;
 
 const HeightValueSchema = z.coerce
@@ -169,7 +170,12 @@ export async function updateHeightAction(
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
 
-  return { success: true };
+  const newBadges = await evaluateAndAwardBadges({
+    userId: session.userId,
+    markSetHeight: true,
+  });
+
+  return { success: true, newBadges: newBadges.map((b) => b.id) };
 }
 
 export type UpdateGoalFormState = {

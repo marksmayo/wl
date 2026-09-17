@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { updateHeightAction, type UpdateHeightFormState } from "@/app/actions/profile";
+import { announceBadges } from "@/lib/badges/events";
 
 export function EditHeightForm({
   currentHeight,
@@ -15,6 +16,12 @@ export function EditHeightForm({
     undefined
   );
   const label = unit === "kg" ? "cm" : "in";
+
+  useEffect(() => {
+    if (state?.newBadges?.length) {
+      announceBadges(state.newBadges);
+    }
+  }, [state?.newBadges]);
 
   return (
     <form action={action} className="flex flex-col gap-4">

@@ -65,6 +65,16 @@ export function MenuIcon({ color = "currentColor", className }: IconProps) {
   );
 }
 
+// Measured Up — a tape measure, for logging your height.
+export function TapeMeasureIcon({ color = "currentColor", className }: IconProps) {
+  return (
+    <svg {...base} stroke={color} className={className}>
+      <rect x="4" y="4" width="16" height="16" rx="3" />
+      <path d="M8 4v3M11 4v2M14 4v3M17 4v2" />
+    </svg>
+  );
+}
+
 // Sign-in streaks — a stove-top flame, staying lit day after day.
 export function FlameIcon({ color = "currentColor", className }: IconProps) {
   return (
