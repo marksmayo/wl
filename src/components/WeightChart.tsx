@@ -124,9 +124,9 @@ export function WeightChart({
               activeDot={{ r: 4 }}
               connectNulls={false}
               isAnimationActive={animate}
-              animationDuration={1400}
+              animationDuration={2800}
               animationEasing="ease-in-out"
-              animationBegin={animate ? i * 80 : 0}
+              animationBegin={animate ? i * 160 : 0}
             />
           ))}
         </LineChart>
