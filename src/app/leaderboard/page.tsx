@@ -3,6 +3,7 @@ import { getLeaderboardData } from "@/lib/leaderboard";
 import { buildColorMap } from "@/lib/chartColors";
 import { competitionStatus, daysRemaining, daysUntilStart } from "@/lib/competition";
 import { WeightChart } from "@/components/WeightChart";
+import { GoalProgressChart } from "@/components/GoalProgressChart";
 import { RankingsList } from "@/components/RankingsList";
 import { LiveMissingToday } from "@/components/LiveMissingToday";
 import { LiveWeighedInToday } from "@/components/LiveWeighedInToday";
@@ -71,6 +72,18 @@ export default async function LeaderboardPage() {
           <h2 className="text-lg font-semibold">Everyone&apos;s progress</h2>
           <div className="mt-4">
             <WeightChart data={chartData} participants={participants} colorMap={colorMap} animate />
+          </div>
+        </div>
+      </AnimatedIn>
+
+      <AnimatedIn delay={0.15} className="mt-6">
+        <div className="glass rounded-2xl p-6">
+          <h2 className="text-lg font-semibold">Goal progress</h2>
+          <p className="mt-1 text-sm text-muted">
+            How far each person with a goal set has gotten toward it, as a percentage.
+          </p>
+          <div className="mt-4">
+            <GoalProgressChart entries={displayEntries} colorMap={colorMap} />
           </div>
         </div>
       </AnimatedIn>
