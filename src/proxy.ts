@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { decryptSession } from "@/lib/session";
 
-const PROTECTED_ROUTES = ["/dashboard", "/leaderboard", "/settings"];
+// Redirecting here, before the CDN serves a page's prerendered shell, saves
+// signed-out visitors a wasted shell load followed by a streamed redirect.
+const PROTECTED_ROUTES = ["/dashboard", "/leaderboard", "/settings", "/badges", "/trophy-case"];
 const AUTH_ROUTES = ["/login", "/register"];
 
 export async function proxy(request: NextRequest) {
