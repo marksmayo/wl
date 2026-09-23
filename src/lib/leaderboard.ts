@@ -1,4 +1,5 @@
 import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   COMPETITION_START,
@@ -10,6 +11,15 @@ import {
   computeWeighedInList,
 } from "@/lib/competition";
 import { LBS_PER_KG, CM_PER_INCH } from "@/lib/units";
+
+/**
+ * Cache tag for everything derived from users + weigh-ins. Every server
+ * action that changes a user row or a weigh-in must `updateTag(LEADERBOARD_TAG)`
+ * after its write — see actions/weighins.ts, actions/profile.ts, actions/auth.ts.
+ * Badge counts are deliberately NOT part of the cached data (they change
+ * during page renders, where cache invalidation isn't available).
+ */
+export const LEADERBOARD_TAG = "leaderboard";
 
 export type UserSeriesPoint = {
   dateKey: string;
@@ -94,8 +104,59 @@ function projectFromRecentWindow(series: UserSeriesPoint[], windowDays: number):
  * - a per-user % change series (baseline = each user's first logged weight)
  * - a combined, forward-filled chart dataset for a multi-line graph
  * - ranked standings by most recent % change (most weight lost = rank 1)
+ *
+ * The heavy part (the users + weigh-ins query and the chart/ranking maths)
+ * is identical for every viewer, so it's cached in Vercel's shared cache
+ * and only recomputed after a weigh-in or profile change. The per-request
+ * wrapper adds badge counts and the "today"-dependent lists on top.
  */
 export async function getLeaderboardData() {
+  const [core, badgeCounts] = await Promise.all([
+    getLeaderboardCore(),
+    prisma.userBadge.groupBy({
+      by: ["userId"],
+      _count: { badgeId: true },
+    }),
+  ]);
+  const badgeCountByUser = new Map(badgeCounts.map((b) => [b.userId, b._count.badgeId]));
+
+  const entries: LeaderboardEntry[] = core.entries.map((e) => ({
+    ...e,
+    badgeCount: badgeCountByUser.get(e.userId) ?? 0,
+  }));
+
+  // Only meaningful during the active window — before it starts nobody is
+  // expected to have logged anything yet, and after it ends there's no
+  // "today" to chase. This UTC-based version is only the SSR/no-JS
+  // fallback — the client corrects it to the visitor's real local date
+  // (see LiveMissingToday), since AU/NZ run 10-13 hours ahead of UTC.
+  const todayKey = todayDateKey();
+  const isActive = competitionStatus(todayKey) === "active";
+  const missingToday = isActive ? computeMissingList(core.roster, todayKey) : [];
+  const weighedInToday = isActive ? computeWeighedInList(core.roster, todayKey) : [];
+
+  return {
+    chartData: core.chartData,
+    entries,
+    participants: core.participants,
+    missingToday,
+    weighedInToday,
+    roster: core.roster,
+  };
+}
+
+type CoreEntry = Omit<LeaderboardEntry, "badgeCount">;
+
+async function getLeaderboardCore(): Promise<{
+  chartData: ChartRow[];
+  entries: CoreEntry[];
+  participants: { id: string; fullName: string }[];
+  roster: { id: string; fullName: string; loggedDates: string[] }[];
+}> {
+  "use cache: remote";
+  cacheTag(LEADERBOARD_TAG);
+  cacheLife("hours");
+
   const users = await prisma.user.findMany({
     select: {
       id: true,
@@ -118,12 +179,6 @@ export async function getLeaderboardData() {
     },
     orderBy: { createdAt: "asc" },
   });
-
-  const badgeCounts = await prisma.userBadge.groupBy({
-    by: ["userId"],
-    _count: { badgeId: true },
-  });
-  const badgeCountByUser = new Map(badgeCounts.map((b) => [b.userId, b._count.badgeId]));
 
   const allDateKeys = new Set<string>();
   const seriesByUser = new Map<string, UserSeriesPoint[]>();
@@ -172,7 +227,7 @@ export async function getLeaderboardData() {
     return row;
   });
 
-  const entries: LeaderboardEntry[] = users.map((user) => {
+  const entries: CoreEntry[] = users.map((user) => {
     const series = seriesByUser.get(user.id);
     const first = series?.[0];
     const last = series?.[series.length - 1];
@@ -246,7 +301,6 @@ export async function getLeaderboardData() {
       projectedLastMonthWeight,
       entryCount: series?.length ?? 0,
       rank: null,
-      badgeCount: badgeCountByUser.get(user.id) ?? 0,
       goalPercent: user.goalPercent,
       goalProgressPercent,
       goalTargetWeight,
@@ -275,22 +329,10 @@ export async function getLeaderboardData() {
     loggedDates: user.weighIns.map((w) => dateToKey(w.date)),
   }));
 
-  // Only meaningful during the active window — before it starts nobody is
-  // expected to have logged anything yet, and after it ends there's no
-  // "today" to chase. This UTC-based version is only the SSR/no-JS
-  // fallback — the client corrects it to the visitor's real local date
-  // (see LiveMissingToday), since AU/NZ run 10-13 hours ahead of UTC.
-  const todayKey = todayDateKey();
-  const isActive = competitionStatus() === "active";
-  const missingToday = isActive ? computeMissingList(roster, todayKey) : [];
-  const weighedInToday = isActive ? computeWeighedInList(roster, todayKey) : [];
-
   return {
     chartData,
     entries: [...ranked, ...unranked],
     participants: users.map((u) => ({ id: u.id, fullName: u.fullName })),
-    missingToday,
-    weighedInToday,
     roster,
   };
 }

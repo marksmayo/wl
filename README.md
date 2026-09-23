@@ -57,6 +57,24 @@ exact for everyone.
    Environment Variables) — generate one with `openssl rand -base64 32`.
 5. Deploy. The build runs `prisma generate && prisma migrate deploy && next build`,
    so the database schema is created automatically on first deploy.
+6. Check regions. `vercel.json` pins the serverless functions to Sydney
+   (`syd1`) because the competitors are in Australia/NZ. Every page makes
+   several database round trips, so the Postgres instance **must be in the
+   same region** as the functions (Sydney / `ap-southeast-2`) — a database in
+   another region adds 150–250 ms per query. If your database lives
+   elsewhere, either move it or change `regions` in `vercel.json` to match it.
+
+## Performance notes
+
+- All routes use Cache Components (`cacheComponents: true`): the static
+  shell of every page is served from the CDN and the session/database
+  dependent parts stream in behind Suspense (`loading.tsx` per route).
+- The leaderboard maths (`getLeaderboardCore` in `src/lib/leaderboard.ts`)
+  is cached in Vercel's shared cache under the `leaderboard` tag. Any server
+  action that changes a user or weigh-in must call `updateTag(LEADERBOARD_TAG)`.
+- Prisma runs with `engineType = "client"` and `@prisma/adapter-pg`, so no
+  native query engine binary is loaded on cold start.
+- Recharts is loaded lazily in the browser (`src/components/charts/LazyCharts.tsx`).
 
 That's it — no other setup needed. Share the URL with your group so everyone
 can register and start logging weigh-ins.

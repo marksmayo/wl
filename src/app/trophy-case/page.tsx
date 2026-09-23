@@ -3,6 +3,9 @@ import { getTrophyCaseStats } from "@/lib/badges/trophyCase";
 import { AnimatedIn } from "@/components/AnimatedIn";
 
 export default async function TrophyCasePage() {
+  // The session read must settle before any database work starts: with
+  // Cache Components, a query kicked off during the prerender pass would
+  // run at build time instead of at request time.
   await verifySession();
   const { totalUsers, entries } = await getTrophyCaseStats();
 

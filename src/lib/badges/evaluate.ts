@@ -1,4 +1,5 @@
 import "server-only";
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { todayDateKey } from "@/lib/competition";
 import {
@@ -17,8 +18,33 @@ import {
 import { longestStreak } from "./streaks";
 import type { Device } from "./device";
 
+/**
+ * The two per-user reads every evaluation needs. Pages load this in the same
+ * `Promise.all` as their other data (see `loadBadgeContext`) so the badge
+ * check adds no extra database round trip to the render.
+ */
+export type BadgeContext = {
+  /** Every badgeId this user already holds. */
+  existingBadgeIds: string[];
+  /** Every date (YYYY-MM-DD) this user has visited an authenticated page. */
+  visitDates: string[];
+};
+
+export async function loadBadgeContext(userId: string): Promise<BadgeContext> {
+  const [existing, visits] = await Promise.all([
+    prisma.userBadge.findMany({ where: { userId }, select: { badgeId: true } }),
+    prisma.dailyVisit.findMany({ where: { userId }, select: { date: true } }),
+  ]);
+  return {
+    existingBadgeIds: existing.map((b) => b.badgeId),
+    visitDates: visits.map((v) => v.date.toISOString().slice(0, 10)),
+  };
+}
+
 export type EvaluateOptions = {
   userId: string;
+  /** Pre-fetched reads (see loadBadgeContext); loaded here if omitted. */
+  context?: BadgeContext;
   /** Record today as a visited day and re-check sign-in-streak badges. */
   recordVisit?: boolean;
   device?: Device;
@@ -64,11 +90,8 @@ export type EvaluateOptions = {
 export async function evaluateAndAwardBadges(
   opts: EvaluateOptions
 ): Promise<BadgeDefinition[]> {
-  const existing = await prisma.userBadge.findMany({
-    where: { userId: opts.userId },
-    select: { badgeId: true },
-  });
-  const have = new Set(existing.map((b) => b.badgeId));
+  const context = opts.context ?? (await loadBadgeContext(opts.userId));
+  const have = new Set(context.existingBadgeIds);
   const toAward = new Set<string>();
 
   function consider(id: string, earned: boolean) {
@@ -77,17 +100,23 @@ export async function evaluateAndAwardBadges(
 
   if (opts.recordVisit) {
     const today = todayDateKey();
-    await prisma.dailyVisit.upsert({
-      where: { userId_date: { userId: opts.userId, date: new Date(`${today}T00:00:00.000Z`) } },
-      update: {},
-      create: { userId: opts.userId, date: new Date(`${today}T00:00:00.000Z`) },
-    });
+    const visitDates = context.visitDates.includes(today)
+      ? context.visitDates
+      : [...context.visitDates, today];
 
-    const visits = await prisma.dailyVisit.findMany({
-      where: { userId: opts.userId },
-      select: { date: true },
-    });
-    const streak = longestStreak(visits.map((v) => v.date.toISOString().slice(0, 10)));
+    // Today's visit row only matters for future streak checks, so the write
+    // runs after the response has been sent rather than delaying it.
+    if (!context.visitDates.includes(today)) {
+      after(async () => {
+        await prisma.dailyVisit.upsert({
+          where: { userId_date: { userId: opts.userId, date: new Date(`${today}T00:00:00.000Z`) } },
+          update: {},
+          create: { userId: opts.userId, date: new Date(`${today}T00:00:00.000Z`) },
+        });
+      });
+    }
+
+    const streak = longestStreak(visitDates);
     for (const days of SIGNIN_STREAK_DAYS) {
       consider(signinStreakId(days), streak >= days);
     }

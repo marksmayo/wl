@@ -1,7 +1,8 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+import { LEADERBOARD_TAG } from "@/lib/leaderboard";
 import { prisma } from "@/lib/prisma";
 import { createSession } from "@/lib/session";
 import { verifySession } from "@/lib/dal";
@@ -49,6 +50,8 @@ export async function updateNameAction(
   await createSession({ userId: user.id, fullName: user.fullName });
 
   revalidatePath("/", "layout");
+
+  updateTag(LEADERBOARD_TAG);
 
   return { success: true };
 }
@@ -102,6 +105,8 @@ export async function updateUnitAction(
 
   revalidatePath("/", "layout");
 
+  updateTag(LEADERBOARD_TAG);
+
   return { success: true };
 }
 
@@ -123,6 +128,8 @@ export async function updatePrivacyAction(
   });
 
   revalidatePath("/leaderboard");
+
+  updateTag(LEADERBOARD_TAG);
 
   return { success: true };
 }
@@ -148,6 +155,7 @@ export async function updateHeightAction(
   if (rawStr === "") {
     await prisma.user.update({ where: { id: session.userId }, data: { height: null } });
     revalidatePath("/leaderboard");
+    updateTag(LEADERBOARD_TAG);
     revalidatePath("/dashboard");
     return { success: true };
   }
@@ -168,6 +176,7 @@ export async function updateHeightAction(
 
   await prisma.user.update({ where: { id: session.userId }, data: { height: parsed.data } });
   revalidatePath("/leaderboard");
+  updateTag(LEADERBOARD_TAG);
   revalidatePath("/dashboard");
 
   const newBadges = await evaluateAndAwardBadges({
@@ -205,6 +214,7 @@ export async function updateGoalAction(
       data: { goalPercent: null, goalWeight: null },
     });
     revalidatePath("/leaderboard");
+    updateTag(LEADERBOARD_TAG);
     revalidatePath("/dashboard");
     return { success: true };
   }
@@ -244,6 +254,7 @@ export async function updateGoalAction(
 
   await prisma.user.update({ where: { id: session.userId }, data: { goalPercent, goalWeight } });
   revalidatePath("/leaderboard");
+  updateTag(LEADERBOARD_TAG);
   revalidatePath("/dashboard");
 
   // Check goal-met immediately too — if the user already exceeds a goal

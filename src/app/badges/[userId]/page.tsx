@@ -5,13 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { AnimatedIn } from "@/components/AnimatedIn";
 import { BadgeGallery } from "@/components/BadgeGallery";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
-import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { evaluateAndAwardBadges, loadBadgeContext } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
 import { getTrophyCaseStats } from "@/lib/badges/trophyCase";
 
 export default async function UserBadgesPage({ params }: PageProps<"/badges/[userId]">) {
-  const session = await verifySession();
-  const { userId } = await params;
+  const [session, { userId }] = await Promise.all([verifySession(), params]);
 
   // Your own badges page already has the toast/self-heal side effects —
   // send you there instead of duplicating a read-only view of yourself.
@@ -19,26 +18,27 @@ export default async function UserBadgesPage({ params }: PageProps<"/badges/[use
     redirect("/badges");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, fullName: true },
-  });
-  if (!user) {
-    notFound();
-  }
-
-  const [earnedBadges, { entries: rarity }] = await Promise.all([
+  const [user, earnedBadges, { entries: rarity }, device, badgeContext] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, fullName: true },
+    }),
     prisma.userBadge.findMany({
-      where: { userId: user.id },
+      where: { userId },
       select: { badgeId: true, earnedAt: true },
     }),
     getTrophyCaseStats(),
+    detectDevice(),
+    loadBadgeContext(session.userId),
   ]);
+  if (!user) {
+    notFound();
+  }
   const rarityByBadgeId = new Map(rarity.map((r) => [r.id, r.percent]));
 
-  const device = await detectDevice();
   const newBadges = await evaluateAndAwardBadges({
     userId: session.userId,
+    context: badgeContext,
     recordVisit: true,
     device,
     markViewedOtherBadges: true,

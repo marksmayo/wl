@@ -1,25 +1,37 @@
+import { after } from "next/server";
 import { verifySession } from "@/lib/dal";
 import { getLeaderboardData } from "@/lib/leaderboard";
 import { buildColorMap } from "@/lib/chartColors";
 import { competitionStatus, daysRemaining, daysUntilStart } from "@/lib/competition";
-import { WeightChart } from "@/components/WeightChart";
-import { GoalProgressChart } from "@/components/GoalProgressChart";
+import { LazyWeightChart, LazyGoalProgressChart } from "@/components/charts/LazyCharts";
 import { RankingsList } from "@/components/RankingsList";
 import { LiveMissingToday } from "@/components/LiveMissingToday";
 import { LiveWeighedInToday } from "@/components/LiveWeighedInToday";
 import { AnimatedIn } from "@/components/AnimatedIn";
 import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
-import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { evaluateAndAwardBadges, loadBadgeContext } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
 import { computeRanksEverHeld } from "@/lib/badges/rankHistory";
-import { getChangedBadgeCounts } from "@/lib/badges/leaderboardSnapshot";
+import {
+  getLastSeenBadgeCounts,
+  diffBadgeCounts,
+  saveBadgeCountSnapshot,
+} from "@/lib/badges/leaderboardSnapshot";
 
 export default async function LeaderboardPage() {
   const session = await verifySession();
-  const [{ chartData, entries, participants, missingToday, weighedInToday, roster }, device] = await Promise.all([
+  // Every read the page needs, in one round trip to the database.
+  const [
+    { chartData, entries, participants, missingToday, weighedInToday, roster },
+    device,
+    badgeContext,
+    lastSeenBadgeCounts,
+  ] = await Promise.all([
     getLeaderboardData(),
     detectDevice(),
+    loadBadgeContext(session.userId),
+    getLastSeenBadgeCounts(session.userId),
   ]);
   const colorMap = buildColorMap(participants.map((p) => p.id));
   const status = competitionStatus();
@@ -29,6 +41,7 @@ export default async function LeaderboardPage() {
   const ranksEverHeld = computeRanksEverHeld(chartData, participants);
   const newBadges = await evaluateAndAwardBadges({
     userId: session.userId,
+    context: badgeContext,
     recordVisit: true,
     device,
     markViewedLeaderboard: true,
@@ -45,10 +58,10 @@ export default async function LeaderboardPage() {
         )
       : entries;
 
-  const changedBadgeUserIds = await getChangedBadgeCounts(
-    session.userId,
-    displayEntries.map((e) => ({ userId: e.userId, badgeCount: e.badgeCount }))
-  );
+  const currentCounts = displayEntries.map((e) => ({ userId: e.userId, badgeCount: e.badgeCount }));
+  const changedBadgeUserIds = diffBadgeCounts(lastSeenBadgeCounts, currentCounts);
+  // Persist the new snapshot once the response is out the door.
+  after(() => saveBadgeCountSnapshot(session.userId, currentCounts));
 
   return (
     <main id="page-content" className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
@@ -71,7 +84,7 @@ export default async function LeaderboardPage() {
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Everyone&apos;s progress</h2>
           <div className="mt-4">
-            <WeightChart data={chartData} participants={participants} colorMap={colorMap} animate />
+            <LazyWeightChart data={chartData} participants={participants} colorMap={colorMap} animate />
           </div>
         </div>
       </AnimatedIn>
@@ -83,7 +96,7 @@ export default async function LeaderboardPage() {
             How far each person with a goal set has gotten toward it, as a percentage.
           </p>
           <div className="mt-4">
-            <GoalProgressChart entries={displayEntries} colorMap={colorMap} />
+            <LazyGoalProgressChart entries={displayEntries} colorMap={colorMap} />
           </div>
         </div>
       </AnimatedIn>

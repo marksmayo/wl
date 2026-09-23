@@ -1,13 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/dal";
 import { clampToCompetitionWindow } from "@/lib/competition";
-import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { evaluateAndAwardBadges, loadBadgeContext } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
-import { getLeaderboardData } from "@/lib/leaderboard";
+import { getLeaderboardData, LEADERBOARD_TAG } from "@/lib/leaderboard";
 import { computeRanksEverHeld } from "@/lib/badges/rankHistory";
 
 export type WeighInFormState = {
@@ -47,55 +47,60 @@ export async function logWeighInAction(
     return { error: "That date is outside the competition window (Sep 4 – Dec 12)." };
   }
 
+  const dateValue = new Date(`${date}T00:00:00.000Z`);
+
   // For the "Oopsie" badge: the most recent entry strictly before the date
   // being submitted, i.e. what the user's weight was the last time they
   // logged, regardless of whether this submission is an edit or a backfill.
-  const priorEntry = await prisma.weighIn.findFirst({
-    where: { userId: session.userId, date: { lt: new Date(`${date}T00:00:00.000Z`) } },
-    orderBy: { date: "desc" },
-    select: { weight: true },
-  });
+  // It only looks at earlier dates, so it can run alongside the upsert.
+  const [priorEntry] = await Promise.all([
+    prisma.weighIn.findFirst({
+      where: { userId: session.userId, date: { lt: dateValue } },
+      orderBy: { date: "desc" },
+      select: { weight: true },
+    }),
+    prisma.weighIn.upsert({
+      where: { userId_date: { userId: session.userId, date: dateValue } },
+      update: { weight },
+      create: { userId: session.userId, date: dateValue, weight },
+    }),
+  ]);
 
-  await prisma.weighIn.upsert({
-    where: { userId_date: { userId: session.userId, date: new Date(`${date}T00:00:00.000Z`) } },
-    update: { weight },
-    create: {
-      userId: session.userId,
-      date: new Date(`${date}T00:00:00.000Z`),
-      weight,
-    },
-  });
-
+  // Expire the shared leaderboard cache BEFORE re-reading it below, so the
+  // rank check (and everyone's next page view) sees this weigh-in.
+  updateTag(LEADERBOARD_TAG);
   revalidatePath("/dashboard");
   revalidatePath("/leaderboard");
 
-  // Early Bird Special / Last Call: was this user's entry for this date the
-  // earliest or latest (by createdAt) among everyone who's logged for it so
-  // far? createdAt is only set on insert, never touched by the upsert's
-  // update branch, so editing an existing entry later doesn't change this.
-  const dayEntries = await prisma.weighIn.findMany({
-    where: { date: new Date(`${date}T00:00:00.000Z`) },
-    orderBy: { createdAt: "asc" },
-    select: { userId: true },
-  });
+  const [dayEntries, allWeighIns, { chartData, participants, entries }, device, badgeContext] =
+    await Promise.all([
+      // Early Bird Special / Last Call: was this user's entry for this date the
+      // earliest or latest (by createdAt) among everyone who's logged for it so
+      // far? createdAt is only set on insert, never touched by the upsert's
+      // update branch, so editing an existing entry later doesn't change this.
+      prisma.weighIn.findMany({
+        where: { date: dateValue },
+        orderBy: { createdAt: "asc" },
+        select: { userId: true },
+      }),
+      prisma.weighIn.findMany({
+        where: { userId: session.userId },
+        orderBy: { date: "asc" },
+        select: { date: true, weight: true },
+      }),
+      getLeaderboardData(),
+      detectDevice(),
+      loadBadgeContext(session.userId),
+    ]);
   const wasFirstOfDay = dayEntries[0]?.userId === session.userId;
   const wasLastOfDay = dayEntries[dayEntries.length - 1]?.userId === session.userId;
 
-  const allWeighIns = await prisma.weighIn.findMany({
-    where: { userId: session.userId },
-    orderBy: { date: "asc" },
-    select: { date: true, weight: true },
-  });
-
-  const [{ chartData, participants, entries }, device] = await Promise.all([
-    getLeaderboardData(),
-    detectDevice(),
-  ]);
   const ranksEverHeld = computeRanksEverHeld(chartData, participants);
   const goalPercent = entries.find((e) => e.userId === session.userId)?.goalPercent ?? null;
 
   const newBadges = await evaluateAndAwardBadges({
     userId: session.userId,
+    context: badgeContext,
     recordVisit: true,
     device,
     ranksEverHeld: ranksEverHeld.get(session.userId),
@@ -118,6 +123,7 @@ export async function deleteWeighInAction(dateKey: string) {
   await prisma.weighIn.deleteMany({
     where: { userId: session.userId, date: new Date(`${dateKey}T00:00:00.000Z`) },
   });
+  updateTag(LEADERBOARD_TAG);
   revalidatePath("/dashboard");
   revalidatePath("/leaderboard");
 }

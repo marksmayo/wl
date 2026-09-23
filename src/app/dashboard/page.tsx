@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/dal";
+import { getCurrentUser, verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { getLeaderboardData } from "@/lib/leaderboard";
 import { buildColorMap } from "@/lib/chartColors";
@@ -13,14 +13,13 @@ import {
 } from "@/lib/competition";
 import { formatPercent, formatWeight } from "@/lib/format";
 import { WeighInForm } from "@/components/WeighInForm";
-import { WeightChart } from "@/components/WeightChart";
-import { ProjectionChart } from "@/components/ProjectionChart";
+import { LazyWeightChart, LazyProjectionChart } from "@/components/charts/LazyCharts";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { CountUp } from "@/components/CountUp";
 import { RankMedal } from "@/components/RankMedal";
 import { LiveCompetitionStatus } from "@/components/LiveCompetitionStatus";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
-import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { evaluateAndAwardBadges, loadBadgeContext } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
 import { computeRanksEverHeld } from "@/lib/badges/rankHistory";
 import { buildAfterWeighInContext } from "@/lib/badges/weighinContext";
@@ -28,17 +27,21 @@ import { currentStreak } from "@/lib/badges/streaks";
 import { LiveStreakFlame } from "@/components/LiveStreakFlame";
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
-
-  const [myWeighIns, { chartData, entries, participants }, device] = await Promise.all([
-    prisma.weighIn.findMany({
-      where: { userId: user.id },
-      orderBy: { date: "asc" },
-      select: { date: true, weight: true },
-    }),
-    getLeaderboardData(),
-    detectDevice(),
-  ]);
+  // The session cookie already carries the user id, so every read below —
+  // including the user row itself — goes out in a single parallel batch.
+  const session = await verifySession();
+  const [user, myWeighIns, { chartData, entries, participants }, device, badgeContext] =
+    await Promise.all([
+      getCurrentUser(),
+      prisma.weighIn.findMany({
+        where: { userId: session.userId },
+        orderBy: { date: "asc" },
+        select: { date: true, weight: true },
+      }),
+      getLeaderboardData(),
+      detectDevice(),
+      loadBadgeContext(session.userId),
+    ]);
 
   const today = todayDateKey();
   const defaultDate = clampToCompetitionWindow(today)
@@ -74,6 +77,7 @@ export default async function DashboardPage() {
   const ranksEverHeld = computeRanksEverHeld(chartData, participants);
   const newBadges = await evaluateAndAwardBadges({
     userId: user.id,
+    context: badgeContext,
     recordVisit: true,
     device,
     ranksEverHeld: ranksEverHeld.get(user.id),
@@ -81,11 +85,11 @@ export default async function DashboardPage() {
     afterWeighIn: buildAfterWeighInContext(myWeighIns),
   });
 
-  const visits = await prisma.dailyVisit.findMany({
-    where: { userId: user.id },
-    select: { date: true },
-  });
-  const visitDates = visits.map((v) => v.date.toISOString().slice(0, 10));
+  // Today's visit is recorded after the response (see evaluateAndAwardBadges),
+  // so count it here for the streak flame rather than re-reading the table.
+  const visitDates = badgeContext.visitDates.includes(today)
+    ? badgeContext.visitDates
+    : [...badgeContext.visitDates, today];
   const fallbackStreak = currentStreak(visitDates, today);
 
   return (
@@ -197,7 +201,7 @@ export default async function DashboardPage() {
               Weight change vs. your first logged weigh-in, as a percentage.
             </p>
             <div className="mt-4">
-              <WeightChart
+              <LazyWeightChart
                 data={chartData}
                 participants={
                   participants.find((p) => p.id === user.id) ? [{ id: user.id, fullName: user.fullName }] : []
@@ -218,7 +222,7 @@ export default async function DashboardPage() {
               lines pick up where your actual progress (solid) leaves off.
             </p>
             <div className="mt-4">
-              <ProjectionChart
+              <LazyProjectionChart
                 series={myPercentSeries}
                 projections={{
                   straightLine: myEntry.projectedStraightLinePercent,

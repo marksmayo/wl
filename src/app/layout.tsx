@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NavBar } from "@/components/NavBar";
 import { BadgeToastHost } from "@/components/BadgeToastHost";
@@ -32,7 +33,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <ConfettiBurst />
         <BadgeToastHost />
-        <SwipeNav />
+        {/* Reads the current pathname, which only exists at request time —
+            the boundary keeps it out of the prerendered shell. */}
+        <Suspense fallback={null}>
+          <SwipeNav />
+        </Suspense>
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/lib/dal";
+import { getCurrentUser, verifySession } from "@/lib/dal";
 import { EditNameForm } from "@/components/EditNameForm";
 import { EditUnitForm } from "@/components/EditUnitForm";
 import { EditPrivacyForm } from "@/components/EditPrivacyForm";
@@ -6,15 +6,20 @@ import { EditGoalForm } from "@/components/EditGoalForm";
 import { EditHeightForm } from "@/components/EditHeightForm";
 import { AnimatedIn, AnimatedStagger } from "@/components/AnimatedIn";
 import { BadgeAnnouncer } from "@/components/BadgeAnnouncer";
-import { evaluateAndAwardBadges } from "@/lib/badges/evaluate";
+import { evaluateAndAwardBadges, loadBadgeContext } from "@/lib/badges/evaluate";
 import { detectDevice } from "@/lib/badges/device";
 
 export default async function SettingsPage() {
-  const user = await getCurrentUser();
-  const device = await detectDevice();
+  const session = await verifySession();
+  const [user, device, badgeContext] = await Promise.all([
+    getCurrentUser(),
+    detectDevice(),
+    loadBadgeContext(session.userId),
+  ]);
 
   const newBadges = await evaluateAndAwardBadges({
     userId: user.id,
+    context: badgeContext,
     recordVisit: true,
     device,
     markViewedSettings: true,
