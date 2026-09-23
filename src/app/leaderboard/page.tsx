@@ -98,7 +98,7 @@ export default async function LeaderboardPage() {
           <h2 className="text-lg font-semibold">Weight loss race</h2>
           <p className="mt-1 text-sm text-muted">
             Who&apos;s lost the most, as a percentage of their starting weight — replayed day by
-            day alongside the graph above.
+            day.
           </p>
           <div className="mt-4">
             <LazyWeightLossRaceChart
@@ -117,7 +117,7 @@ export default async function LeaderboardPage() {
           <h2 className="text-lg font-semibold">Goal progress</h2>
           <p className="mt-1 text-sm text-muted">
             How far each person with a goal set has gotten toward it, as a percentage — replayed
-            day by day alongside the graph above.
+            day by day.
           </p>
           <div className="mt-4">
             <LazyGoalProgressChart

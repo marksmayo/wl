@@ -3,11 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ChartRow, LeaderboardEntry } from "@/lib/leaderboard";
 import { formatPercent } from "@/lib/format";
-import {
-  LINE_DRAW_DURATION_MS,
-  LINE_DRAW_STAGGER_MS,
-  lineDrawFraction,
-} from "@/components/charts/lineDrawTiming";
+import { RACE_DURATION_MS, RACE_STAGGER_MS, lineDrawFraction } from "@/components/charts/lineDrawTiming";
 
 const ROW_HEIGHT = 40;
 
@@ -34,9 +30,8 @@ type RowSeries = {
  * with no bar to grow).
  *
  * With `animate` (and `chartData` + `participants`), the bars replay the
- * competition in step with the WeightChart's left-to-right line draw-in —
- * same clock, same per-person stagger — so the two views move together, and
- * rows slide past each other as people take (or lose) the lead.
+ * competition day by day, and rows slide past each other as people take (or
+ * lose) the lead. A Replay button lets you watch it again.
  */
 export function WeightLossRaceChart({
   entries,
@@ -89,6 +84,7 @@ export function WeightLossRaceChart({
 
   const canAnimate = animate && chartData !== undefined && chartData.length > 1;
   const lastIdx = chartData ? chartData.length - 1 : 0;
+  const [replayToken, setReplayToken] = useState(0);
 
   const [displayed, setDisplayed] = useState<{ percentChange: number[]; asOfIdx: number }>(() => ({
     percentChange: finalRows.map((r) => (canAnimate ? 0 : r.percentChange)),
@@ -100,9 +96,9 @@ export function WeightLossRaceChart({
 
     let frame = 0;
     let lastKey = "";
-    // Anchor the clock to the first animation frame, not to mount — same
-    // trick as WeightChart/GoalProgressChart, so a slow first paint delays
-    // every chart's animation equally instead of making this one skip ahead.
+    // Anchor the clock to the first animation frame, not to mount, so a busy
+    // main thread right after hydration delays the race instead of making it
+    // skip ahead. Re-runs from scratch whenever replayToken changes.
     let start: number | null = null;
 
     const tick = (now: number) => {
@@ -114,10 +110,10 @@ export function WeightLossRaceChart({
       const percentChange = finalRows.map((row) => {
         const series = seriesByUser.get(row.userId);
         if (!series) return 0;
-        if (elapsed < series.staggerIndex * LINE_DRAW_STAGGER_MS + LINE_DRAW_DURATION_MS) {
+        if (elapsed < series.staggerIndex * RACE_STAGGER_MS + RACE_DURATION_MS) {
           allDone = false;
         }
-        const f = lineDrawFraction(elapsed, series.staggerIndex);
+        const f = lineDrawFraction(elapsed, series.staggerIndex, RACE_DURATION_MS, RACE_STAGGER_MS);
         leadFraction = Math.max(leadFraction, f);
         const idx = series.firstIdx + Math.round(f * (lastIdx - series.firstIdx));
         // One decimal: the labels round anyway, and it keeps re-renders to a
@@ -141,7 +137,7 @@ export function WeightLossRaceChart({
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [canAnimate, finalRows, seriesByUser, lastIdx]);
+  }, [canAnimate, finalRows, seriesByUser, lastIdx, replayToken]);
 
   if (finalRows.length === 0) {
     return (
@@ -161,10 +157,25 @@ export function WeightLossRaceChart({
 
   return (
     <div className="w-full">
-      {asOfLabel && (
-        <p className="mb-2 text-right font-mono text-xs tabular-nums text-muted" aria-live="off">
-          As of {asOfLabel}
-        </p>
+      {(asOfLabel || canAnimate) && (
+        <div className="mb-2 flex items-center justify-between gap-3">
+          {canAnimate ? (
+            <button
+              type="button"
+              onClick={() => setReplayToken((t) => t + 1)}
+              className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-white/25 hover:text-foreground"
+            >
+              ↻ Replay
+            </button>
+          ) : (
+            <span />
+          )}
+          {asOfLabel && (
+            <p className="font-mono text-xs tabular-nums text-muted" aria-live="off">
+              As of {asOfLabel}
+            </p>
+          )}
+        </div>
       )}
       <div className="relative" style={{ height: rows.length * ROW_HEIGHT }}>
         {rows.map((row) => {

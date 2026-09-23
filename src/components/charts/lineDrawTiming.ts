@@ -1,10 +1,17 @@
 /**
- * Timing shared by the leaderboard's WeightChart (Recharts Line draw-in) and
- * GoalProgressChart (bars replaying goal progress in step with those lines).
- * Change both charts' pace here, never in one place.
+ * Timing for the leaderboard's WeightChart (Recharts Line draw-in). Change
+ * its pace here, never inline in the component.
  */
 export const LINE_DRAW_DURATION_MS = 8400;
 export const LINE_DRAW_STAGGER_MS = 480;
+
+/**
+ * Timing for the two "race" bar charts (GoalProgressChart, WeightLossRaceChart).
+ * Deliberately its own, slower pace, independent of LINE_DRAW_* above — reading
+ * names and watching rows reorder takes longer than following a line.
+ */
+export const RACE_DURATION_MS = 16800;
+export const RACE_STAGGER_MS = 960;
 
 function clamp01(x: number) {
   return x < 0 ? 0 : x > 1 ? 1 : x;
@@ -38,11 +45,15 @@ export function lineDrawEase(t: number): number {
 }
 
 /**
- * How far (0-1) a line that starts drawing after `staggerIndex` stagger steps
- * has been drawn `elapsedMs` after the animation began.
+ * How far (0-1) a line/bar that starts drawing after `staggerIndex` stagger
+ * steps has been drawn `elapsedMs` after the animation began. Defaults to the
+ * line chart's own pace; the race charts pass RACE_DURATION_MS/RACE_STAGGER_MS.
  */
-export function lineDrawFraction(elapsedMs: number, staggerIndex: number): number {
-  return lineDrawEase(
-    clamp01((elapsedMs - staggerIndex * LINE_DRAW_STAGGER_MS) / LINE_DRAW_DURATION_MS)
-  );
+export function lineDrawFraction(
+  elapsedMs: number,
+  staggerIndex: number,
+  durationMs: number = LINE_DRAW_DURATION_MS,
+  staggerMs: number = LINE_DRAW_STAGGER_MS
+): number {
+  return lineDrawEase(clamp01((elapsedMs - staggerIndex * staggerMs) / durationMs));
 }

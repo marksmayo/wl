@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ChartRow, LeaderboardEntry } from "@/lib/leaderboard";
-import {
-  LINE_DRAW_DURATION_MS,
-  LINE_DRAW_STAGGER_MS,
-  lineDrawFraction,
-} from "@/components/charts/lineDrawTiming";
+import { RACE_DURATION_MS, RACE_STAGGER_MS, lineDrawFraction } from "@/components/charts/lineDrawTiming";
 
 const ROW_HEIGHT = 40;
 
@@ -37,11 +33,11 @@ function goalProgress(percentChange: number, goalPercent: number): number {
  * toward it.
  *
  * With `animate` (and `chartData` + `participants`), the bars replay the
- * competition in step with the WeightChart's left-to-right line draw-in:
- * each bar's width at any moment is that person's goal progress as of the
- * date their line has reached, and rows slide past each other as people
- * take (or lose) the lead — a small "race" that finishes on today's real
- * standings.
+ * competition day by day: each bar's width at any moment is that person's
+ * goal progress as of the date the race has reached, and rows slide past
+ * each other as people take (or lose) the lead — a small "race" that
+ * finishes on today's real standings. A Replay button lets you watch it
+ * again.
  */
 export function GoalProgressChart({
   entries,
@@ -96,6 +92,7 @@ export function GoalProgressChart({
 
   const canAnimate = animate && chartData !== undefined && chartData.length > 1;
   const lastIdx = chartData ? chartData.length - 1 : 0;
+  const [replayToken, setReplayToken] = useState(0);
 
   // Start empty when animating (the lines haven't been drawn yet either),
   // otherwise show the final values straight away.
@@ -109,10 +106,9 @@ export function GoalProgressChart({
 
     let frame = 0;
     let lastKey = "";
-    // Anchor the clock to the first animation frame, not to mount: Recharts
-    // does the same for the line draw-in, and it means a busy main thread
-    // right after hydration delays both charts equally instead of making the
-    // bars skip ahead.
+    // Anchor the clock to the first animation frame, not to mount, so a busy
+    // main thread right after hydration delays the race instead of making it
+    // skip ahead. Re-runs from scratch whenever replayToken changes.
     let start: number | null = null;
 
     const tick = (now: number) => {
@@ -124,10 +120,10 @@ export function GoalProgressChart({
       const progress = finalRows.map((row) => {
         const series = seriesByUser.get(row.userId);
         if (!series) return row.progress;
-        if (elapsed < series.staggerIndex * LINE_DRAW_STAGGER_MS + LINE_DRAW_DURATION_MS) {
+        if (elapsed < series.staggerIndex * RACE_STAGGER_MS + RACE_DURATION_MS) {
           allDone = false;
         }
-        const f = lineDrawFraction(elapsed, series.staggerIndex);
+        const f = lineDrawFraction(elapsed, series.staggerIndex, RACE_DURATION_MS, RACE_STAGGER_MS);
         leadFraction = Math.max(leadFraction, f);
         // The line spans this person's first weigh-in through the last date.
         const idx = series.firstIdx + Math.round(f * (lastIdx - series.firstIdx));
@@ -152,7 +148,7 @@ export function GoalProgressChart({
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [canAnimate, finalRows, seriesByUser, lastIdx]);
+  }, [canAnimate, finalRows, seriesByUser, lastIdx, replayToken]);
 
   if (finalRows.length === 0) {
     return (
@@ -172,10 +168,25 @@ export function GoalProgressChart({
 
   return (
     <div className="w-full">
-      {asOfLabel && (
-        <p className="mb-2 text-right font-mono text-xs tabular-nums text-muted" aria-live="off">
-          As of {asOfLabel}
-        </p>
+      {(asOfLabel || canAnimate) && (
+        <div className="mb-2 flex items-center justify-between gap-3">
+          {canAnimate ? (
+            <button
+              type="button"
+              onClick={() => setReplayToken((t) => t + 1)}
+              className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-white/25 hover:text-foreground"
+            >
+              ↻ Replay
+            </button>
+          ) : (
+            <span />
+          )}
+          {asOfLabel && (
+            <p className="font-mono text-xs tabular-nums text-muted" aria-live="off">
+              As of {asOfLabel}
+            </p>
+          )}
+        </div>
       )}
       <div className="relative" style={{ height: rows.length * ROW_HEIGHT }}>
         {rows.map((row) => (
