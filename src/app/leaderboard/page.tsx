@@ -3,7 +3,11 @@ import { verifySession } from "@/lib/dal";
 import { getLeaderboardData } from "@/lib/leaderboard";
 import { buildColorMap } from "@/lib/chartColors";
 import { competitionStatus, daysRemaining, daysUntilStart } from "@/lib/competition";
-import { LazyWeightChart, LazyGoalProgressChart } from "@/components/charts/LazyCharts";
+import {
+  LazyWeightChart,
+  LazyWeightLossRaceChart,
+  LazyGoalProgressChart,
+} from "@/components/charts/LazyCharts";
 import { RankingsList } from "@/components/RankingsList";
 import { LiveMissingToday } from "@/components/LiveMissingToday";
 import { LiveWeighedInToday } from "@/components/LiveWeighedInToday";
@@ -89,7 +93,26 @@ export default async function LeaderboardPage() {
         </div>
       </AnimatedIn>
 
-      <AnimatedIn delay={0.15} className="mt-6">
+      <AnimatedIn delay={0.13} className="mt-6">
+        <div className="glass rounded-2xl p-6">
+          <h2 className="text-lg font-semibold">Weight loss race</h2>
+          <p className="mt-1 text-sm text-muted">
+            Who&apos;s lost the most, as a percentage of their starting weight — replayed day by
+            day alongside the graph above.
+          </p>
+          <div className="mt-4">
+            <LazyWeightLossRaceChart
+              entries={displayEntries}
+              colorMap={colorMap}
+              chartData={chartData}
+              participants={participants}
+              animate
+            />
+          </div>
+        </div>
+      </AnimatedIn>
+
+      <AnimatedIn delay={0.16} className="mt-6">
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Goal progress</h2>
           <p className="mt-1 text-sm text-muted">

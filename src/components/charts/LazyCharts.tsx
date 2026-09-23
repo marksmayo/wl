@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import type { ComponentProps, CSSProperties } from "react";
 import type { WeightChart } from "@/components/WeightChart";
+import type { WeightLossRaceChart } from "@/components/WeightLossRaceChart";
 import type { GoalProgressChart } from "@/components/GoalProgressChart";
 import type { ProjectionChart } from "@/components/ProjectionChart";
 
@@ -32,5 +33,10 @@ export const LazyProjectionChart = dynamic<ComponentProps<typeof ProjectionChart
 
 export const LazyGoalProgressChart = dynamic<ComponentProps<typeof GoalProgressChart>>(
   () => import("@/components/GoalProgressChart").then((m) => m.GoalProgressChart),
+  { ssr: false, loading: () => <ChartPlaceholder style={{ height: 160 }} /> }
+);
+
+export const LazyWeightLossRaceChart = dynamic<ComponentProps<typeof WeightLossRaceChart>>(
+  () => import("@/components/WeightLossRaceChart").then((m) => m.WeightLossRaceChart),
   { ssr: false, loading: () => <ChartPlaceholder style={{ height: 160 }} /> }
 );
