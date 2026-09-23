@@ -53,6 +53,13 @@ export type ChartRow = {
   [userId: string]: string | number | null;
 };
 
+export type GoalRaceStep = {
+  dateKey: string;
+  label: string;
+  /** goalProgressPercent (0-100) as of this date, per user — only users with a goal set and at least one weigh-in by this date are present. */
+  progress: Record<string, number>;
+};
+
 function dateToKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -285,6 +292,42 @@ export async function getLeaderboardData() {
   const missingToday = isActive ? computeMissingList(roster, todayKey) : [];
   const weighedInToday = isActive ? computeWeighedInList(roster, todayKey) : [];
 
+  // Day-by-day goal-progress standings, for an animated "race" chart: every
+  // date any goal-having user actually logged a weigh-in (not the full
+  // forward-filled calendar grid — that would waste animation steps on days
+  // where nothing changed), each with everyone's forward-filled progress as
+  // of that date.
+  const goalUsers = users.filter((u) => u.goalPercent && u.goalPercent > 0 && seriesByUser.has(u.id));
+  const raceDateKeySet = new Set<string>();
+  for (const u of goalUsers) {
+    for (const p of seriesByUser.get(u.id)!) raceDateKeySet.add(p.dateKey);
+  }
+  const raceDateKeys = Array.from(raceDateKeySet).sort();
+
+  const goalRaceSteps: GoalRaceStep[] = raceDateKeys.map((dateKey) => {
+    const progress: Record<string, number> = {};
+    for (const u of goalUsers) {
+      const series = seriesByUser.get(u.id)!;
+      let point: UserSeriesPoint | undefined;
+      for (const p of series) {
+        if (p.dateKey > dateKey) break;
+        point = p;
+      }
+      if (!point) continue;
+      const actualLossPercent = Math.max(0, -point.percentChange);
+      progress[u.id] = Math.min(100, (actualLossPercent / u.goalPercent!) * 100);
+    }
+    return {
+      dateKey,
+      label: new Date(`${dateKey}T00:00:00.000Z`).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        timeZone: "UTC",
+      }),
+      progress,
+    };
+  });
+
   return {
     chartData,
     entries: [...ranked, ...unranked],
@@ -292,5 +335,6 @@ export async function getLeaderboardData() {
     missingToday,
     weighedInToday,
     roster,
+    goalRaceSteps,
   };
 }

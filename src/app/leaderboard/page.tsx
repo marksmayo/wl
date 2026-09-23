@@ -17,7 +17,10 @@ import { getChangedBadgeCounts } from "@/lib/badges/leaderboardSnapshot";
 
 export default async function LeaderboardPage() {
   const session = await verifySession();
-  const [{ chartData, entries, participants, missingToday, weighedInToday, roster }, device] = await Promise.all([
+  const [
+    { chartData, entries, participants, missingToday, weighedInToday, roster, goalRaceSteps },
+    device,
+  ] = await Promise.all([
     getLeaderboardData(),
     detectDevice(),
   ]);
@@ -83,7 +86,7 @@ export default async function LeaderboardPage() {
             How far each person with a goal set has gotten toward it, as a percentage.
           </p>
           <div className="mt-4">
-            <GoalProgressChart entries={displayEntries} colorMap={colorMap} />
+            <GoalProgressChart entries={displayEntries} raceSteps={goalRaceSteps} colorMap={colorMap} />
           </div>
         </div>
       </AnimatedIn>
