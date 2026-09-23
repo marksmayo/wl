@@ -93,10 +93,17 @@ export default async function LeaderboardPage() {
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Goal progress</h2>
           <p className="mt-1 text-sm text-muted">
-            How far each person with a goal set has gotten toward it, as a percentage.
+            How far each person with a goal set has gotten toward it, as a percentage — replayed
+            day by day alongside the graph above.
           </p>
           <div className="mt-4">
-            <LazyGoalProgressChart entries={displayEntries} colorMap={colorMap} />
+            <LazyGoalProgressChart
+              entries={displayEntries}
+              colorMap={colorMap}
+              chartData={chartData}
+              participants={participants}
+              animate
+            />
           </div>
         </div>
       </AnimatedIn>

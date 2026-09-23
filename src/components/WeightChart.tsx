@@ -12,6 +12,8 @@ import {
   Legend,
 } from "recharts";
 import type { ChartRow } from "@/lib/leaderboard";
+import { LINE_DRAW_DURATION_MS, LINE_DRAW_STAGGER_MS } from "@/components/charts/lineDrawTiming";
+import { usePrefersReducedMotion } from "@/components/charts/usePrefersReducedMotion";
 
 type Participant = { id: string; fullName: string };
 
@@ -69,6 +71,11 @@ export function WeightChart({
   colorMap: Record<string, string>;
   animate?: boolean;
 }) {
+  // Skip the draw-in for visitors who prefer reduced motion. GoalProgressChart
+  // checks the same preference so the two charts stay in step either way.
+  const reducedMotion = usePrefersReducedMotion();
+  const shouldAnimate = animate && !reducedMotion;
+
   if (data.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted">
@@ -123,10 +130,10 @@ export function WeightChart({
               dot={false}
               activeDot={{ r: 4 }}
               connectNulls={false}
-              isAnimationActive={animate}
-              animationDuration={8400}
+              isAnimationActive={shouldAnimate}
+              animationDuration={LINE_DRAW_DURATION_MS}
               animationEasing="ease-in-out"
-              animationBegin={animate ? i * 480 : 0}
+              animationBegin={shouldAnimate ? i * LINE_DRAW_STAGGER_MS : 0}
             />
           ))}
         </LineChart>
