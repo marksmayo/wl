@@ -1,4 +1,4 @@
-export function formatPercent(value: number | null, decimals = 1): string {
+export function formatPercent(value: number | null, decimals = 2): string {
   if (value === null || Number.isNaN(value)) return "—";
   const sign = value > 0 ? "+" : "";
   return `${sign}${value.toFixed(decimals)}%`;

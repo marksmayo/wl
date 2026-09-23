@@ -118,10 +118,10 @@ export function WeightLossRaceChart({
         const f = lineDrawFraction(elapsed, series.staggerIndex, RACE_DURATION_MS, RACE_STAGGER_MS);
         leadFraction = Math.max(leadFraction, f);
         const idx = series.firstIdx + Math.round(f * (lastIdx - series.firstIdx));
-        // One decimal: the labels round anyway, and it keeps re-renders to a
+        // Two decimals: the labels round anyway, and it keeps re-renders to a
         // few hundred per bar over the whole animation instead of one a frame.
         const raw = series.values[idx];
-        return raw === null ? 0 : Math.round(raw * 10) / 10;
+        return raw === null ? 0 : Math.round(raw * 100) / 100;
       });
 
       if (allDone) {
@@ -207,7 +207,7 @@ export function WeightLossRaceChart({
                   }}
                 />
               </div>
-              <div className="w-12 shrink-0 text-right font-mono text-xs text-muted">
+              <div className="w-16 shrink-0 text-right font-mono text-xs text-muted">
                 {formatPercent(row.percentChange)}
               </div>
             </div>

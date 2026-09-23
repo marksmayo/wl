@@ -129,9 +129,9 @@ export function GoalProgressChart({
         leadFraction = Math.max(leadFraction, f);
         // The line spans this person's first weigh-in through the last date.
         const idx = series.firstIdx + Math.round(f * (lastIdx - series.firstIdx));
-        // Whole percents: the labels round anyway, and it keeps re-renders to
-        // ~100 per bar over the whole animation instead of one per frame.
-        return Math.round(series.values[idx] ?? 0);
+        // Two decimals: the labels round anyway, and it keeps re-renders to a
+        // few hundred per bar over the whole animation instead of one a frame.
+        return Math.round((series.values[idx] ?? 0) * 100) / 100;
       });
 
       if (allDone) {
@@ -203,7 +203,7 @@ export function GoalProgressChart({
               transform: `translateY(${(rankByUserId.get(row.userId) ?? 0) * ROW_HEIGHT}px)`,
               transition: "transform 400ms ease",
             }}
-            title={`${Math.round(row.progress)}% of the way to a ${row.goalPercent}% goal`}
+            title={`${row.progress.toFixed(2)}% of the way to a ${row.goalPercent}% goal`}
           >
             <div className="w-24 shrink-0 truncate text-xs text-muted sm:w-28">{row.name}</div>
             <div className="relative h-4 flex-1 overflow-hidden rounded-full bg-surface-2">
@@ -216,8 +216,8 @@ export function GoalProgressChart({
                 }}
               />
             </div>
-            <div className="w-10 shrink-0 text-right font-mono text-xs text-muted">
-              {Math.round(row.progress)}%
+            <div className="w-14 shrink-0 text-right font-mono text-xs text-muted">
+              {row.progress.toFixed(2)}%
             </div>
           </div>
         ))}

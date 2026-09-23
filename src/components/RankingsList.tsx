@@ -191,7 +191,7 @@ export function RankingsList({
                     {change !== null && (
                       <span className="text-[9px]">{isGoodChange ? "▼" : "▲"}</span>
                     )}
-                    {formatPercent(change, 2)}
+                    {formatPercent(change)}
                   </div>
                 </div>
                 <div>

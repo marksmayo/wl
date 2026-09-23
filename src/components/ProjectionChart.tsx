@@ -95,7 +95,7 @@ function CustomTooltip({
               style={{ color: (row.value as number) <= 0 ? "var(--accent)" : "var(--danger)" }}
             >
               {(row.value as number) > 0 ? "+" : ""}
-              {(row.value as number).toFixed(1)}%
+              {(row.value as number).toFixed(2)}%
             </span>
           </div>
         ))}
@@ -142,8 +142,8 @@ export function ProjectionChart({
               tick={{ fill: "var(--muted)", fontSize: 12 }}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v: number) => `${v.toFixed(1)}%`}
-              width={56}
+              tickFormatter={(v: number) => `${v.toFixed(2)}%`}
+              width={64}
             />
             <ReferenceLine y={0} stroke="rgba(255,255,255,0.18)" />
             <Tooltip content={<CustomTooltip />} />
