@@ -20,7 +20,6 @@ import {
   LINE_DRAW_STAGGER_MS,
   lineDrawFraction,
 } from "@/components/charts/lineDrawTiming";
-import { usePrefersReducedMotion } from "@/components/charts/usePrefersReducedMotion";
 
 type Participant = { id: string; fullName: string };
 
@@ -125,7 +124,6 @@ export function GoalProgressChart({
     return map;
   }, [chartData, participants, finalRows]);
 
-  const reducedMotion = usePrefersReducedMotion();
   const canAnimate = animate && chartData !== undefined && chartData.length > 1;
   const lastIdx = chartData ? chartData.length - 1 : 0;
 
@@ -149,9 +147,7 @@ export function GoalProgressChart({
 
     const tick = (now: number) => {
       if (start === null) start = now;
-      // With reduced motion preferred, the first frame jumps straight to the
-      // final values (WeightChart skips its draw-in for the same visitors).
-      const elapsed = reducedMotion ? Number.POSITIVE_INFINITY : now - start;
+      const elapsed = now - start;
       let allDone = true;
       let leadFraction = 0;
 
@@ -186,7 +182,7 @@ export function GoalProgressChart({
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [canAnimate, reducedMotion, finalRows, seriesByUser, lastIdx]);
+  }, [canAnimate, finalRows, seriesByUser, lastIdx]);
 
   if (finalRows.length === 0) {
     return (
