@@ -229,3 +229,14 @@ export function PlateCheckIcon({ color = "currentColor", className }: IconProps)
     </svg>
   );
 }
+
+// Replay badges — going back for seconds: a circular "reheat" arrow around a plate.
+export function ReplayPlateIcon({ color = "currentColor", className }: IconProps) {
+  return (
+    <svg {...base} stroke={color} className={className}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M18.5 8.5A8 8 0 1 0 19.8 14" />
+      <path d="M20.3 5.5 18.5 8.5l-3.3-1" />
+    </svg>
+  );
+}

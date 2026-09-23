@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ChartRow, LeaderboardEntry } from "@/lib/leaderboard";
 import { RACE_DURATION_MS, RACE_STAGGER_MS, lineDrawFraction } from "@/components/charts/lineDrawTiming";
+import { recordRaceReplayAction } from "@/app/actions/badges";
+import { announceBadges } from "@/lib/badges/events";
 
 const ROW_HEIGHT = 40;
 
@@ -173,7 +175,10 @@ export function GoalProgressChart({
           {canAnimate ? (
             <button
               type="button"
-              onClick={() => setReplayToken((t) => t + 1)}
+              onClick={() => {
+                setReplayToken((t) => t + 1);
+                recordRaceReplayAction("goalProgress").then(announceBadges);
+              }}
               className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-white/25 hover:text-foreground"
             >
               ↻ Replay

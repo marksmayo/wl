@@ -18,6 +18,7 @@ import {
   OrderTicketIcon,
   PlateCheckIcon,
   TapeMeasureIcon,
+  ReplayPlateIcon,
   TIER_COLORS,
   RANK_COLORS,
 } from "./icons";
@@ -242,6 +243,20 @@ export const BADGES: BadgeDefinition[] = [
     name: "Measured Up",
     description: "Added your height so your BMI shows on the leaderboard.",
     icon: TapeMeasureIcon,
+  },
+  {
+    id: "replayed-weight-loss-race",
+    name: "Second Helping",
+    description: "Hit replay on the Weight Loss Race chart.",
+    icon: tieredIcon(ReplayPlateIcon, "#38bdf8"),
+    color: "#38bdf8",
+  },
+  {
+    id: "replayed-goal-progress-race",
+    name: "Round Two",
+    description: "Hit replay on the Goal Progress race chart.",
+    icon: tieredIcon(ReplayPlateIcon, "#f59e0b"),
+    color: "#f59e0b",
   },
 ];
 

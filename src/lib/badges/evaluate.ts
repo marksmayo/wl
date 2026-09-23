@@ -62,6 +62,10 @@ export type EvaluateOptions = {
   markSetGoal?: boolean;
   /** Set right after successfully setting a height (BMI can now be calculated). */
   markSetHeight?: boolean;
+  /** Set right after the user clicks Replay on the Weight Loss Race chart. */
+  markReplayedWeightLossRace?: boolean;
+  /** Set right after the user clicks Replay on the Goal Progress race chart. */
+  markReplayedGoalProgressRace?: boolean;
   /** This user's currently-set weight-loss goal (%), if any — checked against afterWeighIn's droppedPct. */
   goalPercent?: number | null;
   /** Pass right after a weigh-in is logged to check weigh-in based badges. */
@@ -139,6 +143,8 @@ export async function evaluateAndAwardBadges(
   if (opts.wasLastOfDay) consider("last-of-day", true);
   if (opts.markSetGoal) consider("goal-set", true);
   if (opts.markSetHeight) consider("height-set", true);
+  if (opts.markReplayedWeightLossRace) consider("replayed-weight-loss-race", true);
+  if (opts.markReplayedGoalProgressRace) consider("replayed-goal-progress-race", true);
 
   if (opts.afterWeighIn) {
     const { weighInDates, firstWeight, latestWeight, previousWeight, everGained } =
