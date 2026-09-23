@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { connection } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOptionalSession } from "@/lib/dal";
 import {
@@ -21,16 +23,13 @@ const DATE_FMT: Intl.DateTimeFormatOptions = {
   timeZone: "UTC",
 };
 
-export default async function Home() {
-  const [session, participantCount] = await Promise.all([
-    getOptionalSession(),
-    prisma.user.count(),
-  ]);
-
-  const status = competitionStatus();
-  const fallbackDays =
-    status === "upcoming" ? daysUntilStart() : status === "active" ? daysRemaining() : 0;
-
+/**
+ * The landing page is almost entirely static, so it's prerendered and served
+ * straight from the CDN. Only three small pieces depend on the request and
+ * stream in behind Suspense: the day countdown, the sign-in-aware call to
+ * action, and the live competitor count.
+ */
+export default function Home() {
   return (
     <>
       <HeroIntro />
@@ -45,7 +44,9 @@ export default async function Home() {
           <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 py-28 text-center">
             <AnimatedIn>
               <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-4 py-1.5 text-xs uppercase tracking-widest text-muted">
-                <LiveCompetitionStatus fallbackStatus={status} fallbackDays={fallbackDays} variant="badge" />
+                <Suspense fallback={<>&nbsp;</>}>
+                  <StatusBadge />
+                </Suspense>
               </span>
             </AnimatedIn>
 
@@ -66,29 +67,9 @@ export default async function Home() {
 
             <AnimatedIn delay={0.3}>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row">
-                {session ? (
-                  <Link
-                    href="/dashboard"
-                    className="rounded-full bg-gradient-to-r from-accent to-accent-2 px-8 py-3.5 font-medium text-background transition-transform hover:scale-105"
-                  >
-                    Go to your dashboard
-                  </Link>
-                ) : (
-                  <>
-                    <Link
-                      href="/register"
-                      className="rounded-full bg-gradient-to-r from-accent to-accent-2 px-8 py-3.5 font-medium text-background transition-transform hover:scale-105"
-                    >
-                      Join the competition
-                    </Link>
-                    <Link
-                      href="/login"
-                      className="rounded-full border border-border px-8 py-3.5 font-medium text-foreground transition-colors hover:border-white/25"
-                    >
-                      I already have an account
-                    </Link>
-                  </>
-                )}
+                <Suspense fallback={<div className="h-[52px] w-56" aria-hidden="true" />}>
+                  <CallToAction />
+                </Suspense>
               </div>
             </AnimatedIn>
 
@@ -98,7 +79,9 @@ export default async function Home() {
             >
               <div className="stat glass rounded-2xl p-6">
                 <div className="text-3xl font-semibold">
-                  <CountUp value={participantCount} />
+                  <Suspense fallback={<>—</>}>
+                    <ParticipantCount />
+                  </Suspense>
                 </div>
                 <div className="mt-1 text-sm text-muted">Competitors</div>
               </div>
@@ -125,4 +108,51 @@ export default async function Home() {
       </div>
     </>
   );
+}
+
+// "Today" only exists at request time, so this can't be part of the shell.
+async function StatusBadge() {
+  await connection();
+  const status = competitionStatus();
+  const fallbackDays =
+    status === "upcoming" ? daysUntilStart() : status === "active" ? daysRemaining() : 0;
+  return <LiveCompetitionStatus fallbackStatus={status} fallbackDays={fallbackDays} variant="badge" />;
+}
+
+async function CallToAction() {
+  const session = await getOptionalSession();
+
+  if (session) {
+    return (
+      <Link
+        href="/dashboard"
+        className="rounded-full bg-gradient-to-r from-accent to-accent-2 px-8 py-3.5 font-medium text-background transition-transform hover:scale-105"
+      >
+        Go to your dashboard
+      </Link>
+    );
+  }
+
+  return (
+    <>
+      <Link
+        href="/register"
+        className="rounded-full bg-gradient-to-r from-accent to-accent-2 px-8 py-3.5 font-medium text-background transition-transform hover:scale-105"
+      >
+        Join the competition
+      </Link>
+      <Link
+        href="/login"
+        className="rounded-full border border-border px-8 py-3.5 font-medium text-foreground transition-colors hover:border-white/25"
+      >
+        I already have an account
+      </Link>
+    </>
+  );
+}
+
+async function ParticipantCount() {
+  await connection();
+  const participantCount = await prisma.user.count();
+  return <CountUp value={participantCount} />;
 }

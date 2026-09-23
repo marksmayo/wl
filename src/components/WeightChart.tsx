@@ -12,6 +12,7 @@ import {
   Legend,
 } from "recharts";
 import type { ChartRow } from "@/lib/leaderboard";
+import { LINE_DRAW_DURATION_MS, LINE_DRAW_STAGGER_MS } from "@/components/charts/lineDrawTiming";
 
 type Participant = { id: string; fullName: string };
 
@@ -69,6 +70,11 @@ export function WeightChart({
   colorMap: Record<string, string>;
   animate?: boolean;
 }) {
+  // Deliberately NOT gated on prefers-reduced-motion: Windows reports that
+  // whenever "Animation effects" is off in Settings, which is common and
+  // rarely meant to opt out of a chart draw-in.
+  const shouldAnimate = animate;
+
   if (data.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted">
@@ -123,10 +129,10 @@ export function WeightChart({
               dot={false}
               activeDot={{ r: 4 }}
               connectNulls={false}
-              isAnimationActive={animate}
-              animationDuration={8400}
+              isAnimationActive={shouldAnimate}
+              animationDuration={LINE_DRAW_DURATION_MS}
               animationEasing="ease-in-out"
-              animationBegin={animate ? i * 480 : 0}
+              animationBegin={shouldAnimate ? i * LINE_DRAW_STAGGER_MS : 0}
             />
           ))}
         </LineChart>

@@ -1,4 +1,5 @@
 import "server-only";
+import { cacheLife, cacheTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   COMPETITION_START,
@@ -10,6 +11,15 @@ import {
   computeWeighedInList,
 } from "@/lib/competition";
 import { LBS_PER_KG, CM_PER_INCH } from "@/lib/units";
+
+/**
+ * Cache tag for everything derived from users + weigh-ins. Every server
+ * action that changes a user row or a weigh-in must `updateTag(LEADERBOARD_TAG)`
+ * after its write — see actions/weighins.ts, actions/profile.ts, actions/auth.ts.
+ * Badge counts are deliberately NOT part of the cached data (they change
+ * during page renders, where cache invalidation isn't available).
+ */
+export const LEADERBOARD_TAG = "leaderboard";
 
 export type UserSeriesPoint = {
   dateKey: string;
@@ -53,13 +63,6 @@ export type ChartRow = {
   [userId: string]: string | number | null;
 };
 
-export type GoalRaceStep = {
-  dateKey: string;
-  label: string;
-  /** goalProgressPercent (0-100) as of this date, per user — only users with a goal set and at least one weigh-in by this date are present. */
-  progress: Record<string, number>;
-};
-
 function dateToKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -101,8 +104,59 @@ function projectFromRecentWindow(series: UserSeriesPoint[], windowDays: number):
  * - a per-user % change series (baseline = each user's first logged weight)
  * - a combined, forward-filled chart dataset for a multi-line graph
  * - ranked standings by most recent % change (most weight lost = rank 1)
+ *
+ * The heavy part (the users + weigh-ins query and the chart/ranking maths)
+ * is identical for every viewer, so it's cached in Vercel's shared cache
+ * and only recomputed after a weigh-in or profile change. The per-request
+ * wrapper adds badge counts and the "today"-dependent lists on top.
  */
 export async function getLeaderboardData() {
+  const [core, badgeCounts] = await Promise.all([
+    getLeaderboardCore(),
+    prisma.userBadge.groupBy({
+      by: ["userId"],
+      _count: { badgeId: true },
+    }),
+  ]);
+  const badgeCountByUser = new Map(badgeCounts.map((b) => [b.userId, b._count.badgeId]));
+
+  const entries: LeaderboardEntry[] = core.entries.map((e) => ({
+    ...e,
+    badgeCount: badgeCountByUser.get(e.userId) ?? 0,
+  }));
+
+  // Only meaningful during the active window — before it starts nobody is
+  // expected to have logged anything yet, and after it ends there's no
+  // "today" to chase. This UTC-based version is only the SSR/no-JS
+  // fallback — the client corrects it to the visitor's real local date
+  // (see LiveMissingToday), since AU/NZ run 10-13 hours ahead of UTC.
+  const todayKey = todayDateKey();
+  const isActive = competitionStatus(todayKey) === "active";
+  const missingToday = isActive ? computeMissingList(core.roster, todayKey) : [];
+  const weighedInToday = isActive ? computeWeighedInList(core.roster, todayKey) : [];
+
+  return {
+    chartData: core.chartData,
+    entries,
+    participants: core.participants,
+    missingToday,
+    weighedInToday,
+    roster: core.roster,
+  };
+}
+
+type CoreEntry = Omit<LeaderboardEntry, "badgeCount">;
+
+async function getLeaderboardCore(): Promise<{
+  chartData: ChartRow[];
+  entries: CoreEntry[];
+  participants: { id: string; fullName: string }[];
+  roster: { id: string; fullName: string; loggedDates: string[] }[];
+}> {
+  "use cache: remote";
+  cacheTag(LEADERBOARD_TAG);
+  cacheLife("hours");
+
   const users = await prisma.user.findMany({
     select: {
       id: true,
@@ -125,12 +179,6 @@ export async function getLeaderboardData() {
     },
     orderBy: { createdAt: "asc" },
   });
-
-  const badgeCounts = await prisma.userBadge.groupBy({
-    by: ["userId"],
-    _count: { badgeId: true },
-  });
-  const badgeCountByUser = new Map(badgeCounts.map((b) => [b.userId, b._count.badgeId]));
 
   const allDateKeys = new Set<string>();
   const seriesByUser = new Map<string, UserSeriesPoint[]>();
@@ -179,7 +227,7 @@ export async function getLeaderboardData() {
     return row;
   });
 
-  const entries: LeaderboardEntry[] = users.map((user) => {
+  const entries: CoreEntry[] = users.map((user) => {
     const series = seriesByUser.get(user.id);
     const first = series?.[0];
     const last = series?.[series.length - 1];
@@ -253,7 +301,6 @@ export async function getLeaderboardData() {
       projectedLastMonthWeight,
       entryCount: series?.length ?? 0,
       rank: null,
-      badgeCount: badgeCountByUser.get(user.id) ?? 0,
       goalPercent: user.goalPercent,
       goalProgressPercent,
       goalTargetWeight,
@@ -282,59 +329,10 @@ export async function getLeaderboardData() {
     loggedDates: user.weighIns.map((w) => dateToKey(w.date)),
   }));
 
-  // Only meaningful during the active window — before it starts nobody is
-  // expected to have logged anything yet, and after it ends there's no
-  // "today" to chase. This UTC-based version is only the SSR/no-JS
-  // fallback — the client corrects it to the visitor's real local date
-  // (see LiveMissingToday), since AU/NZ run 10-13 hours ahead of UTC.
-  const todayKey = todayDateKey();
-  const isActive = competitionStatus() === "active";
-  const missingToday = isActive ? computeMissingList(roster, todayKey) : [];
-  const weighedInToday = isActive ? computeWeighedInList(roster, todayKey) : [];
-
-  // Day-by-day goal-progress standings, for an animated "race" chart: every
-  // date any goal-having user actually logged a weigh-in (not the full
-  // forward-filled calendar grid — that would waste animation steps on days
-  // where nothing changed), each with everyone's forward-filled progress as
-  // of that date.
-  const goalUsers = users.filter((u) => u.goalPercent && u.goalPercent > 0 && seriesByUser.has(u.id));
-  const raceDateKeySet = new Set<string>();
-  for (const u of goalUsers) {
-    for (const p of seriesByUser.get(u.id)!) raceDateKeySet.add(p.dateKey);
-  }
-  const raceDateKeys = Array.from(raceDateKeySet).sort();
-
-  const goalRaceSteps: GoalRaceStep[] = raceDateKeys.map((dateKey) => {
-    const progress: Record<string, number> = {};
-    for (const u of goalUsers) {
-      const series = seriesByUser.get(u.id)!;
-      let point: UserSeriesPoint | undefined;
-      for (const p of series) {
-        if (p.dateKey > dateKey) break;
-        point = p;
-      }
-      if (!point) continue;
-      const actualLossPercent = Math.max(0, -point.percentChange);
-      progress[u.id] = Math.min(100, (actualLossPercent / u.goalPercent!) * 100);
-    }
-    return {
-      dateKey,
-      label: new Date(`${dateKey}T00:00:00.000Z`).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC",
-      }),
-      progress,
-    };
-  });
-
   return {
     chartData,
     entries: [...ranked, ...unranked],
     participants: users.map((u) => ({ id: u.id, fullName: u.fullName })),
-    missingToday,
-    weighedInToday,
     roster,
-    goalRaceSteps,
   };
 }

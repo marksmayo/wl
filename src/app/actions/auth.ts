@@ -3,8 +3,10 @@
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { redirect } from "next/navigation";
+import { updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { createSession, deleteSession } from "@/lib/session";
+import { LEADERBOARD_TAG } from "@/lib/leaderboard";
 
 export type AuthFormState = {
   error?: string;
@@ -50,6 +52,8 @@ export async function registerAction(
   const user = await prisma.user.create({
     data: { fullName, passwordHash, unit, hideWeight },
   });
+  // A new competitor appears on the (cached) leaderboard and roster.
+  updateTag(LEADERBOARD_TAG);
 
   await createSession({ userId: user.id, fullName: user.fullName });
   redirect("/dashboard");

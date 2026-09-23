@@ -1,88 +1,191 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import type { LeaderboardEntry, GoalRaceStep } from "@/lib/leaderboard";
+import { useEffect, useMemo, useState } from "react";
+import type { ChartRow, LeaderboardEntry } from "@/lib/leaderboard";
+import {
+  LINE_DRAW_DURATION_MS,
+  LINE_DRAW_STAGGER_MS,
+  lineDrawFraction,
+} from "@/components/charts/lineDrawTiming";
 
 const ROW_HEIGHT = 40;
-const TOTAL_DURATION_MS = 8400; // matches the leaderboard line chart's own draw-in pacing
-const MIN_STEP_MS = 180;
+
+type Participant = { id: string; fullName: string };
 
 type Row = {
   userId: string;
   name: string;
-  goalPercent: number;
   progress: number;
+  goalPercent: number;
 };
 
-// Keyed by replayToken so each (re)play gets a fresh mount — that's what
-// resets stepIndex back to 0, rather than an effect calling setState on an
-// already-mounted instance.
-function GoalRace({
+type RowSeries = {
+  /** Goal progress (0-100) at each chartData index; null before the first weigh-in. */
+  values: (number | null)[];
+  firstIdx: number;
+  /** Position in the WeightChart's participants array — drives the stagger. */
+  staggerIndex: number;
+};
+
+function goalProgress(percentChange: number, goalPercent: number): number {
+  const lossPercent = Math.max(0, -percentChange);
+  return Math.min(100, Math.max(0, (lossPercent / goalPercent) * 100));
+}
+
+/**
+ * Horizontal meter bars of how far each person with a goal has gotten
+ * toward it.
+ *
+ * With `animate` (and `chartData` + `participants`), the bars replay the
+ * competition in step with the WeightChart's left-to-right line draw-in:
+ * each bar's width at any moment is that person's goal progress as of the
+ * date their line has reached, and rows slide past each other as people
+ * take (or lose) the lead — a small "race" that finishes on today's real
+ * standings.
+ */
+export function GoalProgressChart({
   entries,
-  raceSteps,
   colorMap,
+  chartData,
+  participants,
+  animate = false,
 }: {
   entries: LeaderboardEntry[];
-  raceSteps: GoalRaceStep[];
   colorMap: Record<string, string>;
+  chartData?: ChartRow[];
+  participants?: Participant[];
+  animate?: boolean;
 }) {
-  const byUserId = new Map(entries.map((e) => [e.userId, e]));
-  const participantCount = new Set(raceSteps.flatMap((s) => Object.keys(s.progress))).size;
+  const finalRows: Row[] = useMemo(
+    () =>
+      entries
+        .filter(
+          (e): e is LeaderboardEntry & { goalProgressPercent: number; goalPercent: number } =>
+            e.goalProgressPercent !== null && e.goalPercent !== null
+        )
+        .map((e) => ({
+          userId: e.userId,
+          name: e.fullName,
+          progress: Math.min(100, Math.max(0, e.goalProgressPercent)),
+          goalPercent: e.goalPercent,
+        }))
+        .sort((a, b) => b.progress - a.progress || a.name.localeCompare(b.name)),
+    [entries]
+  );
 
-  const [stepIndex, setStepIndex] = useState(0);
-  const stepMs = Math.max(MIN_STEP_MS, TOTAL_DURATION_MS / Math.max(1, raceSteps.length - 1));
+  // Per-row progress history, derived from the same forward-filled rows the
+  // line chart draws, so the two views agree at every date.
+  const seriesByUser = useMemo(() => {
+    const map = new Map<string, RowSeries>();
+    if (!chartData || chartData.length === 0) return map;
+    const staggerIndexById = new Map((participants ?? []).map((p, i) => [p.id, i]));
+    for (const row of finalRows) {
+      const values = chartData.map((r) => {
+        const pct = r[row.userId];
+        return typeof pct === "number" ? goalProgress(pct, row.goalPercent) : null;
+      });
+      const firstIdx = values.findIndex((v) => v !== null);
+      map.set(row.userId, {
+        values,
+        firstIdx: firstIdx === -1 ? chartData.length - 1 : firstIdx,
+        staggerIndex: staggerIndexById.get(row.userId) ?? 0,
+      });
+    }
+    return map;
+  }, [chartData, participants, finalRows]);
+
+  const canAnimate = animate && chartData !== undefined && chartData.length > 1;
+  const lastIdx = chartData ? chartData.length - 1 : 0;
+
+  // Start empty when animating (the lines haven't been drawn yet either),
+  // otherwise show the final values straight away.
+  const [displayed, setDisplayed] = useState<{ progress: number[]; asOfIdx: number }>(() => ({
+    progress: finalRows.map((r) => (canAnimate ? 0 : r.progress)),
+    asOfIdx: canAnimate ? 0 : lastIdx,
+  }));
 
   useEffect(() => {
-    if (raceSteps.length <= 1) return;
+    if (!canAnimate) return;
 
-    let i = 0;
-    const timeoutRef: { current: ReturnType<typeof setTimeout> | null } = { current: null };
+    let frame = 0;
+    let lastKey = "";
+    // Anchor the clock to the first animation frame, not to mount: Recharts
+    // does the same for the line draw-in, and it means a busy main thread
+    // right after hydration delays both charts equally instead of making the
+    // bars skip ahead.
+    let start: number | null = null;
 
-    function tick() {
-      i += 1;
-      setStepIndex(i);
-      if (i < raceSteps.length - 1) {
-        timeoutRef.current = setTimeout(tick, stepMs);
+    const tick = (now: number) => {
+      if (start === null) start = now;
+      const elapsed = now - start;
+      let allDone = true;
+      let leadFraction = 0;
+
+      const progress = finalRows.map((row) => {
+        const series = seriesByUser.get(row.userId);
+        if (!series) return row.progress;
+        if (elapsed < series.staggerIndex * LINE_DRAW_STAGGER_MS + LINE_DRAW_DURATION_MS) {
+          allDone = false;
+        }
+        const f = lineDrawFraction(elapsed, series.staggerIndex);
+        leadFraction = Math.max(leadFraction, f);
+        // The line spans this person's first weigh-in through the last date.
+        const idx = series.firstIdx + Math.round(f * (lastIdx - series.firstIdx));
+        // Whole percents: the labels round anyway, and it keeps re-renders to
+        // ~100 per bar over the whole animation instead of one per frame.
+        return Math.round(series.values[idx] ?? 0);
+      });
+
+      if (allDone) {
+        setDisplayed({ progress: finalRows.map((r) => r.progress), asOfIdx: lastIdx });
+        return;
       }
-    }
-    timeoutRef.current = setTimeout(tick, stepMs);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      const asOfIdx = Math.round(leadFraction * lastIdx);
+      // Only touch React state when something visible actually changed.
+      const key = `${progress.join(",")}|${asOfIdx}`;
+      if (key !== lastKey) {
+        lastKey = key;
+        setDisplayed({ progress, asOfIdx });
+      }
+      frame = requestAnimationFrame(tick);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs once per mount (see key on GoalRace)
-  }, []);
 
-  const step = raceSteps[Math.min(stepIndex, raceSteps.length - 1)];
-  const isLastStep = stepIndex >= raceSteps.length - 1;
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [canAnimate, finalRows, seriesByUser, lastIdx]);
 
-  const rows: Row[] = Object.entries(step.progress)
-    .map(([userId, progress]) => {
-      const entry = byUserId.get(userId);
-      return {
-        userId,
-        name: entry?.fullName ?? "?",
-        goalPercent: entry?.goalPercent ?? 0,
-        progress,
-      };
-    })
+  if (finalRows.length === 0) {
+    return (
+      <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted">
+        No one has set a goal yet.
+      </div>
+    );
+  }
+
+  // Re-sorted by *current* progress every tick (not the fixed final order)
+  // so rows visibly overtake each other as the race plays out.
+  const rows: Row[] = finalRows
+    .map((row, i) => ({ ...row, progress: displayed.progress[i] ?? row.progress }))
     .sort((a, b) => b.progress - a.progress || a.name.localeCompare(b.name));
+  const rankByUserId = new Map(rows.map((row, i) => [row.userId, i]));
+  const asOfLabel = chartData?.[displayed.asOfIdx]?.label;
 
   return (
-    <div>
-      <div className="text-xs text-muted">
-        As of <span className="font-medium text-foreground">{step.label}</span>
-      </div>
-
-      <div className="relative mt-3" style={{ height: participantCount * ROW_HEIGHT }}>
-        {rows.map((row, i) => (
+    <div className="w-full">
+      {asOfLabel && (
+        <p className="mb-2 text-right font-mono text-xs tabular-nums text-muted" aria-live="off">
+          As of {asOfLabel}
+        </p>
+      )}
+      <div className="relative" style={{ height: rows.length * ROW_HEIGHT }}>
+        {rows.map((row) => (
           <div
             key={row.userId}
             className="absolute inset-x-0 flex items-center gap-3"
             style={{
               height: ROW_HEIGHT,
-              transform: `translateY(${i * ROW_HEIGHT}px)`,
-              transition: `transform ${isLastStep ? 400 : stepMs}ms ease`,
+              transform: `translateY(${(rankByUserId.get(row.userId) ?? 0) * ROW_HEIGHT}px)`,
+              transition: "transform 400ms ease",
             }}
             title={`${Math.round(row.progress)}% of the way to a ${row.goalPercent}% goal`}
           >
@@ -93,7 +196,7 @@ function GoalRace({
                 style={{
                   width: `${row.progress}%`,
                   backgroundColor: colorMap[row.userId],
-                  transition: `width ${stepMs}ms linear`,
+                  transition: "width 120ms linear",
                 }}
               />
             </div>
@@ -103,43 +206,6 @@ function GoalRace({
           </div>
         ))}
       </div>
-    </div>
-  );
-}
-
-export function GoalProgressChart({
-  entries,
-  raceSteps,
-  colorMap,
-}: {
-  entries: LeaderboardEntry[];
-  raceSteps: GoalRaceStep[];
-  colorMap: Record<string, string>;
-}) {
-  const [replayToken, setReplayToken] = useState(0);
-
-  if (raceSteps.length === 0) {
-    return (
-      <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-border text-sm text-muted">
-        No one has set a goal yet.
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      {raceSteps.length > 1 && (
-        <div className="mb-2 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setReplayToken((t) => t + 1)}
-            className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs text-muted transition-colors hover:border-white/25 hover:text-foreground"
-          >
-            ↻ Replay
-          </button>
-        </div>
-      )}
-      <GoalRace key={replayToken} entries={entries} raceSteps={raceSteps} colorMap={colorMap} />
     </div>
   );
 }
