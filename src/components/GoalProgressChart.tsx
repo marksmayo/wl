@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ChartRow, LeaderboardEntry } from "@/lib/leaderboard";
-import { RACE_DURATION_MS, RACE_STAGGER_MS, lineDrawFraction } from "@/components/charts/lineDrawTiming";
+import {
+  RACE_DURATION_MS,
+  RACE_STAGGER_MS,
+  lineDrawFraction,
+  racePoints,
+  raceValueAt,
+  type RacePoint,
+} from "@/components/charts/lineDrawTiming";
 import { recordRaceReplayAction } from "@/app/actions/badges";
 import { announceBadges } from "@/lib/badges/events";
 
@@ -18,9 +25,9 @@ type Row = {
 };
 
 type RowSeries = {
-  /** Goal progress (0-100) at each chartData index; null before the first weigh-in. */
-  values: (number | null)[];
   firstIdx: number;
+  /** Real (non-forward-filled) data points to interpolate between — see racePoints/raceValueAt. */
+  points: RacePoint[];
   /** Position in the WeightChart's participants array — drives the stagger. */
   staggerIndex: number;
 };
@@ -84,8 +91,8 @@ export function GoalProgressChart({
       });
       const firstIdx = values.findIndex((v) => v !== null);
       map.set(row.userId, {
-        values,
         firstIdx: firstIdx === -1 ? chartData.length - 1 : firstIdx,
+        points: racePoints(values),
         staggerIndex: staggerIndexById.get(row.userId) ?? 0,
       });
     }
@@ -128,10 +135,15 @@ export function GoalProgressChart({
         const f = lineDrawFraction(elapsed, series.staggerIndex, RACE_DURATION_MS, RACE_STAGGER_MS);
         leadFraction = Math.max(leadFraction, f);
         // The line spans this person's first weigh-in through the last date.
-        const idx = series.firstIdx + Math.round(f * (lastIdx - series.firstIdx));
+        // A continuous (non-rounded) position, interpolated between the real
+        // data points either side of it, so the bar glides smoothly through
+        // the flat forward-filled stretches instead of sitting still and
+        // then snapping the moment the next real entry's day arrives.
+        const exactIdx = series.firstIdx + f * (lastIdx - series.firstIdx);
+        const raw = raceValueAt(series.points, exactIdx);
         // Two decimals: the labels round anyway, and it keeps re-renders to a
         // few hundred per bar over the whole animation instead of one a frame.
-        return Math.round((series.values[idx] ?? 0) * 100) / 100;
+        return Math.round((raw ?? 0) * 100) / 100;
       });
 
       if (allDone) {
@@ -212,7 +224,7 @@ export function GoalProgressChart({
                 style={{
                   width: `${row.progress}%`,
                   backgroundColor: colorMap[row.userId],
-                  transition: "width 120ms linear",
+                  transition: "width 100ms linear",
                 }}
               />
             </div>

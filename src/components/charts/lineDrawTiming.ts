@@ -57,3 +57,41 @@ export function lineDrawFraction(
 ): number {
   return lineDrawEase(clamp01((elapsedMs - staggerIndex * staggerMs) / durationMs));
 }
+
+export type RacePoint = { idx: number; value: number };
+
+/**
+ * Collapses a forward-filled per-day series down to just the days a real
+ * entry landed (every other day repeats the same value). Race bars
+ * interpolate between these instead of the raw per-day array so the value
+ * glides smoothly across the flat forward-filled stretch instead of sitting
+ * still and then snapping the instant the next real entry's day arrives.
+ */
+export function racePoints(values: (number | null)[]): RacePoint[] {
+  const points: RacePoint[] = [];
+  let prev: number | null = null;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (v === null) continue;
+    if (v !== prev) points.push({ idx: i, value: v });
+    prev = v;
+  }
+  return points;
+}
+
+/** Linear interpolation between the two race points bracketing `exactIdx`. */
+export function raceValueAt(points: RacePoint[], exactIdx: number): number | null {
+  if (points.length === 0) return null;
+  if (exactIdx <= points[0].idx) return points[0].value;
+  const last = points[points.length - 1];
+  if (exactIdx >= last.idx) return last.value;
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[i];
+    const b = points[i + 1];
+    if (exactIdx >= a.idx && exactIdx <= b.idx) {
+      const t = b.idx === a.idx ? 0 : (exactIdx - a.idx) / (b.idx - a.idx);
+      return a.value + (b.value - a.value) * t;
+    }
+  }
+  return last.value;
+}
