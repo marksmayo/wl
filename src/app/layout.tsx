@@ -5,6 +5,7 @@ import { NavBar } from "@/components/NavBar";
 import { BadgeToastHost } from "@/components/BadgeToastHost";
 import { ConfettiBurst } from "@/components/ConfettiBurst";
 import { SwipeNav } from "@/components/SwipeNav";
+import { LiveVisitRecorder } from "@/components/LiveVisitRecorder";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,9 +34,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <ConfettiBurst />
         <BadgeToastHost />
-        {/* Reads the current pathname, which only exists at request time —
-            the boundary keeps it out of the prerendered shell. */}
+        {/* Both read the current pathname, which only exists at request
+            time — the boundary keeps it out of the prerendered shell. */}
         <Suspense fallback={null}>
+          <LiveVisitRecorder />
           <SwipeNav />
         </Suspense>
       </body>

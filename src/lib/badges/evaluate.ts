@@ -47,6 +47,14 @@ export type EvaluateOptions = {
   context?: BadgeContext;
   /** Record today as a visited day and re-check sign-in-streak badges. */
   recordVisit?: boolean;
+  /**
+   * Overrides todayDateKey() (server UTC) for the recordVisit check — pass
+   * the visitor's real local date when known. UTC lags AU/NZ visitors by
+   * hours, so two visits that are genuinely on consecutive local days can
+   * otherwise land on the same UTC date and silently stall a streak (see
+   * recordLocalVisitAction).
+   */
+  visitDateKey?: string;
   device?: Device;
   markViewedSettings?: boolean;
   markViewedLeaderboard?: boolean;
@@ -103,7 +111,7 @@ export async function evaluateAndAwardBadges(
   }
 
   if (opts.recordVisit) {
-    const today = todayDateKey();
+    const today = opts.visitDateKey ?? todayDateKey();
     const visitDates = context.visitDates.includes(today)
       ? context.visitDates
       : [...context.visitDates, today];
