@@ -94,6 +94,14 @@ export default async function LeaderboardPage() {
       </AnimatedIn>
 
       <AnimatedIn delay={0.13} className="mt-6">
+        <LiveMissingToday roster={roster} fallbackPeople={missingToday} />
+      </AnimatedIn>
+
+      <AnimatedIn delay={0.16} className="mt-6">
+        <LiveWeighedInToday roster={roster} fallbackPeople={weighedInToday} />
+      </AnimatedIn>
+
+      <AnimatedIn delay={0.2} className="mt-6">
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Weight loss race</h2>
           <p className="mt-1 text-sm text-muted">
@@ -112,7 +120,7 @@ export default async function LeaderboardPage() {
         </div>
       </AnimatedIn>
 
-      <AnimatedIn delay={0.16} className="mt-6">
+      <AnimatedIn delay={0.25} className="mt-6">
         <div className="glass rounded-2xl p-6">
           <h2 className="text-lg font-semibold">Goal progress</h2>
           <p className="mt-1 text-sm text-muted">
@@ -129,14 +137,6 @@ export default async function LeaderboardPage() {
             />
           </div>
         </div>
-      </AnimatedIn>
-
-      <AnimatedIn delay={0.2} className="mt-6">
-        <LiveMissingToday roster={roster} fallbackPeople={missingToday} />
-      </AnimatedIn>
-
-      <AnimatedIn delay={0.25} className="mt-6">
-        <LiveWeighedInToday roster={roster} fallbackPeople={weighedInToday} />
       </AnimatedIn>
 
       <AnimatedIn delay={0.3} className="mt-6">
