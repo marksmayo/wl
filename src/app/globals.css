@@ -95,6 +95,47 @@ body {
   }
 }
 
+@keyframes flash-red {
+  0%, 100% {
+    background-color: var(--surface-2);
+    border-color: var(--border);
+    color: var(--muted);
+  }
+  50% {
+    background-color: rgba(255, 107, 107, 0.18);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+}
+.animate-flash-red {
+  animation: flash-red 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-flash-red {
+    animation: none;
+    background-color: rgba(255, 107, 107, 0.18);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+}
+
+/* Combines the one-time entrance jiggle with the looping red flash — two
+   animations on the same element via the comma-separated shorthand, since
+   a single `animation` declaration from one class would otherwise replace
+   the other's rather than layering with it. */
+.animate-jiggle-flash-red {
+  animation: jiggle 2s ease-in-out, flash-red 1.4s ease-in-out infinite;
+  animation-fill-mode: both, none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-jiggle-flash-red {
+    animation: none;
+    background-color: rgba(255, 107, 107, 0.18);
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+}
+
 @keyframes badge-in {
   0% { transform: translateY(-12px) scale(0.96); opacity: 0; }
   100% { transform: translateY(0) scale(1); opacity: 1; }
