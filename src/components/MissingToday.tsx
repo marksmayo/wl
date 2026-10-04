@@ -21,7 +21,7 @@ export function MissingToday({ people }: { people: MissingPerson[] }) {
               key={person.id}
               className={`inline-block rounded-full border px-3 py-1.5 text-sm ${
                 isLongestOverdue
-                  ? "animate-jiggle-flash-red border-danger/60 text-danger"
+                  ? "animate-jiggle-pop-flash-red border-danger/60 text-danger"
                   : "animate-jiggle border-border bg-surface-2 text-muted"
               }`}
               style={{ animationDelay: `${Math.min(i, 20) * 0.05}s` }}

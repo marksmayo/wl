@@ -122,13 +122,28 @@ body {
 /* Combines the one-time entrance jiggle with the looping red flash — two
    animations on the same element via the comma-separated shorthand, since
    a single `animation` declaration from one class would otherwise replace
-   the other's rather than layering with it. */
-.animate-jiggle-flash-red {
-  animation: jiggle 2s ease-in-out, flash-red 1.4s ease-in-out infinite;
+   the other's rather than layering with it. jiggle-pop also briefly scales
+   the chip up to 4x mid-wobble before settling back down, so the
+   most-overdue person is unmissable the moment the page loads. */
+@keyframes jiggle-pop {
+  0%, 100% { transform: rotate(0deg) scale(1); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); z-index: 1; }
+  10% { transform: rotate(-4deg) scale(2.2); box-shadow: 0 0 16px 4px rgba(255, 107, 107, 0.6); z-index: 20; }
+  20% { transform: rotate(4deg) scale(4); box-shadow: 0 0 22px 6px rgba(255, 107, 107, 0.7); z-index: 20; }
+  30% { transform: rotate(-4deg) scale(3.1); box-shadow: 0 0 18px 5px rgba(255, 107, 107, 0.55); z-index: 20; }
+  40% { transform: rotate(4deg) scale(2); box-shadow: 0 0 14px 4px rgba(255, 107, 107, 0.45); z-index: 20; }
+  50% { transform: rotate(-3deg) scale(1.5); box-shadow: 0 0 10px 3px rgba(255, 107, 107, 0.35); z-index: 10; }
+  60% { transform: rotate(3deg) scale(1.25); box-shadow: 0 0 7px 2px rgba(255, 107, 107, 0.25); z-index: 5; }
+  70% { transform: rotate(-2deg) scale(1.1); box-shadow: 0 0 5px 1px rgba(255, 107, 107, 0.15); }
+  80% { transform: rotate(2deg) scale(1.03); box-shadow: 0 0 3px 0 rgba(255, 107, 107, 0.08); }
+  90% { transform: rotate(-1deg) scale(1); box-shadow: 0 0 1px 0 rgba(255, 107, 107, 0.03); }
+}
+.animate-jiggle-pop-flash-red {
+  position: relative;
+  animation: jiggle-pop 2s ease-in-out, flash-red 1.4s ease-in-out infinite;
   animation-fill-mode: both, none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .animate-jiggle-flash-red {
+  .animate-jiggle-pop-flash-red {
     animation: none;
     background-color: rgba(255, 107, 107, 0.18);
     border-color: var(--danger);
