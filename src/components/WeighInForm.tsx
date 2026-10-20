@@ -29,6 +29,15 @@ export function WeighInForm({
   const cardRef = useRef<HTMLDivElement>(null);
   const dateRef = useRef<HTMLInputElement>(null);
   const weightRef = useRef<HTMLInputElement>(null);
+  const weighInsRef = useRef(weighIns);
+  useEffect(() => {
+    weighInsRef.current = weighIns;
+  }, [weighIns]);
+  // Set only by a real user edit (native `input` event) — our own
+  // corrections below write `.value` directly without dispatching one, so
+  // this never gets set by us and can't mistake "we corrected it a minute
+  // ago" for "the visitor picked a date on purpose."
+  const touchedByUserRef = useRef(false);
 
   useEffect(() => {
     if (state?.success && cardRef.current) {
@@ -55,26 +64,50 @@ export function WeighInForm({
   useEffect(() => {
     // The server resolves "today" in UTC, which lags AU/NZ visitors by
     // hours and can default this form to yesterday. Correct it to the
-    // visitor's real local date once we know it — only if they haven't
-    // already touched the field.
+    // visitor's real local date whenever it's worth rechecking — on mount,
+    // and again if the tab regains focus/visibility, since a tab left open
+    // across a local midnight would otherwise keep showing the stale date
+    // and silently save a weigh-in under the wrong day.
     const dateInput = dateRef.current;
-    if (!dateInput || dateInput.value !== defaultDate) return;
+    if (!dateInput) return;
 
-    const localToday = localDateKey(new Date());
-    const correctedDate = clampToCompetitionWindow(localToday)
-      ? localToday
-      : localToday < COMPETITION_START
-      ? COMPETITION_START
-      : COMPETITION_END;
+    function correctDate() {
+      if (!dateInput || touchedByUserRef.current) return;
 
-    if (correctedDate === defaultDate) return;
+      const localToday = localDateKey(new Date());
+      const correctedDate = clampToCompetitionWindow(localToday)
+        ? localToday
+        : localToday < COMPETITION_START
+        ? COMPETITION_START
+        : COMPETITION_END;
 
-    dateInput.value = correctedDate;
-    const match = weighIns.find((w) => w.date === correctedDate);
-    if (weightRef.current) {
-      weightRef.current.value = match ? String(match.weight) : "";
+      if (correctedDate === dateInput.value) return;
+
+      dateInput.value = correctedDate;
+      const match = weighInsRef.current.find((w) => w.date === correctedDate);
+      if (weightRef.current) {
+        weightRef.current.value = match ? String(match.weight) : "";
+      }
     }
-  }, [defaultDate, weighIns]);
+
+    function markTouched() {
+      touchedByUserRef.current = true;
+    }
+
+    function onVisible() {
+      if (document.visibilityState === "visible") correctDate();
+    }
+
+    correctDate();
+    dateInput.addEventListener("input", markTouched);
+    window.addEventListener("focus", correctDate);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      dateInput.removeEventListener("input", markTouched);
+      window.removeEventListener("focus", correctDate);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [defaultDate]);
 
   return (
     <div ref={cardRef} className="glass rounded-2xl p-6">
