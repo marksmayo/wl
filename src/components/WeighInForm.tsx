@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { gsap } from "gsap";
 import { logWeighInAction, type WeighInFormState } from "@/app/actions/weighins";
 import {
@@ -38,6 +38,14 @@ export function WeighInForm({
   // this never gets set by us and can't mistake "we corrected it a minute
   // ago" for "the visitor picked a date on purpose."
   const touchedByUserRef = useRef(false);
+  // Set when the visitor's device reports a date more than a day away from
+  // the server's — no real IANA time zone diverges from UTC by more than a
+  // day, so a bigger gap means the device's own clock/date is wrong, not a
+  // time zone difference. Caught this way because it otherwise fails
+  // silently: every weigh-in upserts onto whatever date the device thinks
+  // "today" is, so it can look like daily logging while never actually
+  // landing on a real day the leaderboard checks for.
+  const [clockLooksWrong, setClockLooksWrong] = useState(false);
 
   useEffect(() => {
     if (state?.success && cardRef.current) {
@@ -72,9 +80,17 @@ export function WeighInForm({
     if (!dateInput) return;
 
     function correctDate() {
+      const localToday = localDateKey(new Date());
+
+      const driftDays = Math.round(
+        (new Date(`${localToday}T00:00:00.000Z`).getTime() -
+          new Date(`${defaultDate}T00:00:00.000Z`).getTime()) /
+          86_400_000
+      );
+      setClockLooksWrong(Math.abs(driftDays) > 1);
+
       if (!dateInput || touchedByUserRef.current) return;
 
-      const localToday = localDateKey(new Date());
       const correctedDate = clampToCompetitionWindow(localToday)
         ? localToday
         : localToday < COMPETITION_START
@@ -153,6 +169,13 @@ export function WeighInForm({
           </div>
         </div>
 
+        {clockLooksWrong && (
+          <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
+            Your device&apos;s date looks off, so weigh-ins might save under the wrong day and
+            never show up as logged. Double-check the date &amp; time settings on your phone or
+            computer (and that time zone is set automatically).
+          </p>
+        )}
         {state?.error && (
           <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
             {state.error}
